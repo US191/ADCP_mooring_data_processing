@@ -142,7 +142,7 @@ function y = filt2(b,a,x)
 %   Copyright 1988-2004 The MathWorks, Inc.
 %   $Revision: 1.7.4.2 $  $Date: 2004/12/26 22:15:49 $
 
-    error(nargchk(3,3,nargin))
+    narginchk(3,3)
     if (isempty(b) || isempty(a) || isempty(x))
         y = [];
         return
@@ -273,7 +273,7 @@ function [b,a] = fir1(N,Wn,varargin)
 %     [1] "Programs for Digital Signal Processing", IEEE Press
 %         John Wiley & Sons, 1979, pg. 5.2-1.
 
-error(nargchk(2,5,nargin));
+narginchk(2,5);
 
 % Parse optional input arguments
 [Ftype,Wind,SCALING,msg] = parseoptargs(Wn,varargin{:});
@@ -540,7 +540,7 @@ function [n,msg1,msg2] = firchk(n,Fend,a,exception)
 %   Copyright 1988-2004 The MathWorks, Inc.
 %   $Revision: 1.7.4.3 $  $Date: 2004/04/13 00:18:44 $
 
-nargchk(3,4,nargin);
+narginchk(3,4);
 
 if nargin == 3,
     exception = false;
@@ -625,7 +625,7 @@ function [h,a]=firls(N,F,M,W,ftype);
 %   $Revision: 1.11.4.2 $  $Date: 2004/04/13 00:17:54 $
 
 % check number of arguments, set up defaults.
-nargchk(3,5,nargin);
+narginchk(3,5);
 
 if (max(F)>1) || (min(F)<0)
     error('Frequencies in F must be in range [0,1].')
@@ -904,7 +904,7 @@ function w = hamming(varargin)
 %   $Revision: 1.14 $  $Date: 2002/11/21 15:46:43 $
 
 % Check number of inputs
-error(nargchk(1,2,nargin));
+narginchk(1,2);
 
 [w,msg] = gencoswin('hamming',varargin{:});
 error(msg);
