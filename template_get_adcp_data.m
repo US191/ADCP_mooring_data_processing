@@ -229,3 +229,4 @@ print(hf,graph_name,'-dpdf','-r300');
  
 % rmpath
 rmpath('.\moored_adcp_proc');
+clear all; close all;
