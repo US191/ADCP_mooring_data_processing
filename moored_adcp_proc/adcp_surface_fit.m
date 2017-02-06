@@ -34,24 +34,24 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     x_null = -coef(2,:)./2./coef(1,:);
 
     offset=-round(nmedian((x_null-0.5)*blen+blnk)-nmedian(zadcp));
-    disp('-------------------------------')
-    disp(['Depth offset is ' num2str(offset) ' m'])
-    disp('-------------------------------')
+    disp('-------------------------------');
+    disp(['Depth offset is ' num2str(offset) ' m']);
+    disp('-------------------------------');
     
     
     % Plot histogram of differences
     dz=((x_null-0.5)*blen+blnk)-zadcp;
     count=[-100:1:100];
     ncount=hist(-dz,count);
-    figure(1)
+    figure(1);
     bar(count,ncount);
-    title('Histogram of differences between original and reconstructed depth record')
+    title('Histogram of differences between original and reconstructed depth record');
     
     figure(2);
-    plot(zadcp,'b')
-    hold on
-    plot((x_null-0.5)*blen+blnk,'r')
-    legend('Original','Reconstructed from surface reflection')
+    plot(zadcp,'b');
+    hold on;
+    plot((x_null-0.5)*blen+blnk,'r');
+    legend('Original','Reconstructed from surface reflection');
     
     if abs(offset)>15
        reply = input('Do you want to overwrite offset? 1/0 [0]:');
@@ -64,23 +64,23 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
        end
     end
     
-    disp(['Offset of ' num2str(offset) ' m is applied'])
+    disp(['Offset of ' num2str(offset) ' m is applied']);
 
     % Apply offset to get correct bin depth and instrument depth:
     zbins=z-offset;
     zadcp1=zadcp-offset;
     
-    figure(2)
-    plot(zadcp1,'y')
+    figure(2);
+    plot(zadcp1,'y');
     text(300, max(zadcp),['Offset applied: ' num2str(offset) ' m']);
     %,'fonts',12,'fontw','bold','backgroundc','w');
-    legend('Original','Reconstructed from surface reflection','Offset applied')
+    legend('Original','Reconstructed from surface reflection','Offset applied');
     
-    print -dpng surface_fit
+    %print -dpng surface_fit;
     
-    figure(3)
-    pcolor([1:length(x_null)],zbins,ea); shading flat
+    figure(3);
+    pcolor([1:length(x_null)],zbins,ea); shading flat;
     
-    print -dpng surface_ea
+    %print -dpng surface_ea;
 
 end

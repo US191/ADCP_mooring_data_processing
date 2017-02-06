@@ -20,6 +20,9 @@ addpath('.\moored_adcp_proc');
 fpath = '';
 rawfile='.\data_example\FR24_000.000'; % binary file with .000 extension
  
+% Directory for outputs
+fpath_output = '.\data_example\';
+
 cruise.name = '';
 mooring.name='';
 mooring.lat=00+00/60; %latitude
@@ -60,7 +63,7 @@ freq = raw.config.sysconfig.frequency;
 
 %% Read data
 ea = squeeze(mean(raw.amp(:,:,first:last),2));  % amplitude of the bins 
-figure; imagesc(ea);title('Amplitude of the bins'); colorbar
+figure; imagesc(ea);title('Amplitude of the bins'); colorbar;
 
 u2 = squeeze(raw.vel(:,1,first:last));
 v2 = squeeze(raw.vel(:,2,first:last));
@@ -73,7 +76,7 @@ T = raw.temperature(first:last);
 press = raw.pressure(first:last);
 
 nbin = raw.config.ncells;  % number of bins
-bin  = [1:nbin];
+bin  = 1:nbin;
 blen = raw.config.cell;    % bin length
 blnk = raw.config.blank;   % blank distance after transmit
 
@@ -101,7 +104,7 @@ if strcmp(adcp.direction,'up')
 elseif strcmp(direction,'dn')
     z = dpt1+(binmat-0.5)*blen+blnk;
 else
-    error('Bin depth calculation: unknown direction!')
+    error('Bin depth calculation: unknown direction!');
 end
 
 %% Remove bad data if ADCP is looking upward
@@ -130,7 +133,7 @@ if strcmp(adcp.direction,'up')
     end
 
     if 1
-        bins=[nmedian(sbin)-4:nmedian(sbin)+2];
+        bins=nmedian(sbin)-4:nmedian(sbin)+2;
         adcp_check_surface(bins,u,u1,v,v1,time,bin,z); 
         % here the closest bins below the surface are plotted that are supposed to have good velocities, if there are still bad velocities a manual criterion needs to be found
     end
@@ -158,7 +161,7 @@ data.temp=T;
 data.sspd = soundspeed;
 
 % Save
-save([fpath, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '.mat'],'adcp','mooring','data','raw');
+save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '.mat'],'adcp','mooring','data','raw');
 
 %% Interpolate data on a regular vertical grid
 Z = fliplr(blen/2:blen:max(z(:))+blen);
@@ -183,7 +186,7 @@ data.uintfilt=uintfilt(1:length(Z),:);
 data.vintfilt=vintfilt(1:length(Z),:);
 data.Z = Z(1:length(Z));
 data.inttim = inttim;
-save([fpath, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '_int_filt_sub.mat'],'adcp','mooring','data','raw');
+save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '_int_filt_sub.mat'],'adcp','mooring','data','raw');
 
 %% Figure
 niv_u = (-1.5:0.1:1.5);
@@ -201,7 +204,7 @@ set(gca,'ydir', 'reverse');
 ylabel('Depth (m)');
 ylim([0,adcp.instr_depth]);
 %change figure label in HH:MM
-gregtick
+gregtick;
 title({[mooring.name, ' - MERIDIONAL VELOCITY - RDI ',num2str(freq),' kHz']});
 
 %v
@@ -218,9 +221,11 @@ ylim([0,adcp.instr_depth]);
 gregtick;
 title({[mooring.name, ' - ZONAL VELOCITY - RDI ',num2str(freq),' kHz']});
 
-graph_name = [fpath, mooring.name '_U_V_int_filt_sub'];
+graph_name = [fpath_output, mooring.name '_U_V_int_filt_sub'];
 set(hf,'Units','Inches');
 pos = get(hf,'Position');
-set(hf,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+set(hf,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)]);
 print(hf,graph_name,'-dpdf','-r300');
  
+% rmpath
+rmpath('.\moored_adcp_proc');
