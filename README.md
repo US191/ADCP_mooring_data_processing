@@ -1,6 +1,10 @@
 # ADCP_mooring_data_processing
 Program for processing ADCP mooring data
 
+Full documentation is here : https://stockage-preprod.ird.fr/oc-shib/index.php/s/CIGFEEranUUa33i
+
+Short documentation:
+
 Open template_get_adcp_data.m
 
 Input parameters specific to the mooring:
