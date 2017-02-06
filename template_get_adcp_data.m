@@ -24,7 +24,7 @@ rawfile='.\data_example\FR24_000.000'; % binary file with .000 extension
 fpath_output = '.\data_example\';
 
 cruise.name = '';
-mooring.name='';
+mooring.name='10W0N';
 mooring.lat=00+00/60; %latitude
 mooring.lon=-10+00/60; %longitude
 
@@ -227,6 +227,32 @@ pos = get(hf,'Position');
 set(hf,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)]);
 print(hf,graph_name,'-dpdf','-r300');
  
+%%  Write netcdf file           
+[yr_start , ~, ~] = gregorian(inttim(1));
+[yr_end,  ~, ~] = gregorian(inttim(length(inttim)));
+
+ncid=netcdf.create([fpath_output,'ADCP_',mooring.name,'_',num2str(yr_start),'_',num2str(yr_end),'_1d.nc'],'NC_WRITE');
+ 
+%create dimension
+dimidt = netcdf.defDim(ncid,'time',length(inttim));
+dimidz = netcdf.defDim(ncid,'depth',length(Z));
+%Define IDs for the dimension variables (pressure,time,latitude,...)
+time_ID=netcdf.defVar(ncid,'time','double',dimidt);
+depth_ID=netcdf.defVar(ncid,'depth','double',dimidz);
+%Define the main variable ()
+u_ID = netcdf.defVar(ncid,'u','double',[dimidt dimidz]);
+v_ID = netcdf.defVar(ncid,'v','double',[dimidt dimidz]);
+%We are done defining the NetCdf
+netcdf.endDef(ncid);
+%Then store the dimension variables in
+netcdf.putVar(ncid,time_ID,inttim);
+netcdf.putVar(ncid,depth_ID,Z);  
+%Then store my main variable
+netcdf.putVar(ncid,u_ID,uintfilt);
+netcdf.putVar(ncid,v_ID,vintfilt);
+%We're done, close the netcdf
+netcdf.close(ncid);
+
 % rmpath
-rmpath('.\moored_adcp_proc');
+rmpath('..\moored_adcp_proc');
 clear all; close all;
