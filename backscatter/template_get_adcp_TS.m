@@ -4,10 +4,10 @@
 % Author : Jérémie HABASQUE - IRD
 % -------------------------------
 % INPUTS:
-% - ADCP data processed
-% - CTD file
+% - ADCP data processed (output of template_get_adcp_data.m)
+% - CTD file (NetCDF)
 % OUTPUTS:
-% - 
+% - Target strength interpolated on a regular grid
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 close all
 clear all
