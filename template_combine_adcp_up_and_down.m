@@ -10,8 +10,7 @@
 % - U and V fields interpolated on a regulard grid, filtered and subsampled
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-clear all;
-close all;
+clear all;close all;
 
 % path
 addpath('.\moored_adcp_proc');
