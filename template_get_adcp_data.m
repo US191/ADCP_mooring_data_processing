@@ -182,9 +182,10 @@ end
 [uintfilt,vintfilt,inttim] = adcp_filt_sub(data,u_interp',v_interp',1:length(Z),40);
 
 % Save interpolated data
-data.uintfilt=uintfilt(1:length(Z),:);
-data.vintfilt=vintfilt(1:length(Z),:);
-data.Z = Z(1:length(Z));
+bin_start = 1; % bin indice where good interpolated data for the whole dataset start
+data.uintfilt=uintfilt(bin_start:length(Z),:);
+data.vintfilt=vintfilt(bin_start:length(Z),:);
+data.Z = Z(bin_start:length(Z));
 data.inttim = inttim;
 save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '_int_filt_sub.mat'],'adcp','mooring','data','raw');
 
@@ -195,7 +196,7 @@ niv_v = (-0.5:0.1:0.5);
 hf=figure('position', [0, 0, 1400, 1000]);
 %u
 subplot(2,1,1);
-[C,h] = contourf(inttim,Z(1:length(Z)),uintfilt(1:length(Z),:),niv_u); 
+[C,h] = contourf(inttim,Z(bin_start:length(Z)),uintfilt(bin_start:length(Z),:),niv_u); 
 set(h,'LineColor','none');
 caxis(niv_u([1 end]));
 h=colorbar;
@@ -209,7 +210,7 @@ title({[mooring.name, ' - MERIDIONAL VELOCITY - RDI ',num2str(freq),' kHz']});
 
 %v
 subplot(2,1,2);
-[C,h] = contourf(inttim,Z(1:length(Z)),vintfilt(1:length(Z),:),niv_v); 
+[C,h] = contourf(inttim,Z(bin_start:length(Z)),vintfilt(bin_start:length(Z),:),niv_v); 
 set(h,'LineColor','none');
 caxis(niv_v([1 end]));
 h=colorbar;
