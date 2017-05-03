@@ -15,6 +15,7 @@ addpath('.\moored_adcp_proc');
 fpath = 'C:\Users\jhabasqu\Desktop\PIRATA\ADCP_mooring_data\10W-0N\merge_data\';
 mooring.name='10W0N';
 
+% niveaux d'affichages des champs u et v
 niv_u = (-1.5:0.1:1.5);
 niv_v = (-0.5:0.1:0.5);
 
