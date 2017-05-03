@@ -115,7 +115,7 @@ if strcmp(adcp.direction,'up')
         sz_dpt(i)=adcp_shadowzone(dpt(i),raw.config.sysconfig.angle); % depending on the instrument depth and the beam angle the shadow zone, i.e. the depth below the surface which is contaminated by the surface reflection is determined
 
         iz(i)=find(z(:,i)>sz_dpt(i),1,'last');
-        sbin(i)=bin(iz(i))-1;
+        sbin(i)=bin(iz(i));
         
         % here a manual criterion should be hard-coded if
         % adcp_check_surface (below) shows bad velocities close to the
