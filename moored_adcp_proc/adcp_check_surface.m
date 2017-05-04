@@ -23,7 +23,7 @@ imagesc(time,bin(bins),v(bins,:),[-1 1]);
 set(gca,'YTick',bins);
 hold on;
 gregtick;
-title('Zonal velocity after correction');
+title('Zonal velocity before correction');
 
 subplot 324;
 imagesc(time,bin(bins),v1(bins,:),[-1 1]);
