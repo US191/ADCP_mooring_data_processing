@@ -124,14 +124,14 @@ rmpath('.\moored_adcp_proc');
 clear all; close all;
 
 %%  Write netcdf file           
-[yr_start , ~, ~] = gregorian(inttim(1));
-[yr_end,  ~, ~] = gregorian(inttim(length(inttim)));
+[yr_start , ~, ~] = gregorian(down_time(1));
+[yr_end,  ~, ~] = gregorian(down_time(length(down_time)));
 
 ncid=netcdf.create([fpath_output,'ADCP_',mooring.name, '_',num2str(yr_start),'_',num2str(yr_end),'_1d.nc'],'NC_WRITE');
  
 %create dimension
-dimidt = netcdf.defDim(ncid,'time',length(inttim));
-dimidz = netcdf.defDim(ncid,'depth',length(Z));
+dimidt = netcdf.defDim(ncid,'time',length(down_time));
+dimidz = netcdf.defDim(ncid,'depth',length(z_final));
 %Define IDs for the dimension variables (pressure,time,latitude,...)
 time_ID=netcdf.defVar(ncid,'time','double',dimidt);
 depth_ID=netcdf.defVar(ncid,'depth','double',dimidz);
