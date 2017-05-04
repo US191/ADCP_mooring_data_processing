@@ -114,7 +114,7 @@ binmat = repmat((1:nbin)',1,length(dpt1));
 % surface reflection, which is done in adcp_surface_fit
 if strcmp(adcp.direction,'up')  
     [z,dpt1,offset,xnull]=adcp_surface_fit(dpt,ea,sbins,blen,blnk,nbin);
-elseif strcmp(direction,'dn')
+elseif strcmp(adcp.direction,'dn')
     z = dpt1+(binmat-0.5)*blen+blnk;
 else
     error('Bin depth calculation: unknown direction!');
