@@ -324,9 +324,6 @@ blnk = raw.config.blank;   % blank distance after transmit
 dt=(time(2)-time(1))*24;   % Sampling interval in hours
 
 % Magnetic deviation values
-magnetic_deviation_ini = 15.27;
-magnetic_deviation_end = 15.11;
-rot=-(magnetic_deviation_ini+magnetic_deviation_end)/2;  
 [u,v]=uvrot(u2,v2,-rot);   % Correction of magnetic deviation
 
 pg = squeeze(raw.pg(:,4,first:last));  % percent good
