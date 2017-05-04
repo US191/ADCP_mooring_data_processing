@@ -8,62 +8,75 @@
 % OUTPUTS:
 % - U and V fields interpolated on a regulard grid, filtered and subsampled
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% First part --------------------------------------------------------------------------------------------------------------------
 close all
 clear all
  
-% path
-addpath('.\moored_adcp_proc');
-
 %% META information:
+
+% Path
+addpath('.\moored_adcp_proc');
+addpath('.\backscatter'); % Optionnel
 
 % Location rawfile
 fpath = '';
-rawfile='.\data_example\FR24_000.000'; % binary file with .000 extension
+rawfile='..Exemple_data\FR25_000.000'; % binary file with .000 extension
  
 % Directory for outputs
-fpath_output = '.\data_example\';
+fpath_output = 'output_path';
 
-cruise.name = '';
-mooring.name='10W0N';
-mooring.lat=00+00/60; %latitude
-mooring.lon=-10+00/60; %longitude
+% Cruise/mooring info
+cruise.name = 'cruise name';
+mooring.name='0N10W';
+mooring.lat=00+00/60; %latitude en degrés décimaux
+mooring.lon=-10+00/60; %longitude en degrés décimaux
 
+% ADCP info
 adcp.sn=15258;
-adcp.type='150 khz Quartermaster';
+adcp.type='150 khz Quartermaster'; % Type : ‘Quartermaster’, ‘longranger’
 adcp.direction='up';        % upward-looking 'up', downward-looking 'dn'
-adcp.instr_depth=178;       % nominal instrument depth
-
+adcp.instr_depth=270;       % nominal instrument depth
 instr=1;                    % this is just for name convention and sorting of all mooring instruments
 
 % If ADCP was not set up to correct for magnetic deviation internally
 % ("EA0" code in configuration file), use http://www.ngdc.noaa.gov/geomag-web/#declination
 % Magnetic deviation: Mean of deviations at time of deployment and time of recovery 
 
-% magnetic deviation values
-magnetic_deviation_ini = 15.11;
-magnetic_deviation_end = 15.01;
+% Magnetic deviation values
+magnetic_deviation_ini = 9.29;
+magnetic_deviation_end = 9.05;
 rot=-(magnetic_deviation_ini+magnetic_deviation_end)/2;  
-
-% determine first and last indiced when instrument was at depth (you can do this by plotting 'raw.pressure' for example           
-first = 8; 
-last = 7963; 
-
-% If upward looking: range of surface bins used for instrument depth correction below!
-sbins= 17:28; % here a range of bins is given which cover the surface reflection
-
-% Exclude data with percent good below prct_good
-prct_good = 20;
 
 % Read rawfile
 fprintf('Read %s\n', rawfile);
 raw=read_os3(rawfile,'all');
 figure;plot(raw.pressure);set(gca,'ydir','reverse');
- 
-freq = raw.config.sysconfig.frequency;
+title('pressure sensor');ylabel('Depth(m)');xlabel('Time'); 
+saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Pressure_sensor'],'fig')
+
+% Second part --------------------------------------------------------------------------------------------------------------------
+
+% Determine first and last indiced when instrument was at depth (you can do this by plotting 'raw.pressure' for example           
+first = 12; 
+last = 17620; 
+
+% amplitude of the bins / Correction ADCP's depth
+ea = squeeze(mean(raw.amp(:,:,first:last),2));   
+figure; imagesc(ea);title('Amplitude of the bins'); colorbar;
+ylabel('Bins');xlabel('Time'); 
+saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins'],'fig')
+
+% Third part --------------------------------------------------------------------------------------------------------------------
+
+% If upward looking: range of surface bins used for instrument depth correction below!
+sbins= 31:38; % here a range of bins is given which cover the surface reflection
+
+% Exclude data with percent good below prct_good
+prct_good = 20;
 
 %% Read data
-ea = squeeze(mean(raw.amp(:,:,first:last),2));  % amplitude of the bins 
-figure; imagesc(ea);title('Amplitude of the bins'); colorbar;
+freq = raw.config.sysconfig.frequency;
 
 u2 = squeeze(raw.vel(:,1,first:last));
 v2 = squeeze(raw.vel(:,2,first:last));
@@ -107,6 +120,10 @@ else
     error('Bin depth calculation: unknown direction!');
 end
 
+saveas(figure(1),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Hist_diff_orig-depth_recon-depth'],'fig')
+saveas(figure(2),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Offset_depth'],'fig')
+saveas(figure(3),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins_2'],'fig')
+
 %% Remove bad data if ADCP is looking upward
 u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea;
 
@@ -138,6 +155,7 @@ if strcmp(adcp.direction,'up')
         % here the closest bins below the surface are plotted that are supposed to have good velocities, if there are still bad velocities a manual criterion needs to be found
     end
 end
+saveas(figure(4),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Meridional_zonal_velocity'],'fig')
 
 %% SAVE DATA
 % More meta information
@@ -180,6 +198,8 @@ end
   
 %% Horizontal interpolation, filtering and subsampling
 [uintfilt,vintfilt,inttim] = adcp_filt_sub(data,u_interp',v_interp',1:length(Z),40);
+saveas(figure(5),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','data_raw_filt_subsampled_1'],'fig')
+saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','data_raw_filt_subsampled_2'],'fig')
 
 % Save interpolated data
 bin_start = 1; % bin indice where good interpolated data for the whole dataset start
@@ -255,5 +275,7 @@ netcdf.putVar(ncid,v_ID,vintfilt);
 netcdf.close(ncid);
 
 % rmpath
-rmpath('..\moored_adcp_proc');
+% rmpath('..\moored_adcp_proc');
 clear all; close all;
+
+% -------------------------------------------------------------------------------------------
