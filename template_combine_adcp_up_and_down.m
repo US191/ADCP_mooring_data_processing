@@ -121,7 +121,6 @@ print(hf,graph_name,'-dpdf','-r300');
 
 % rmpath
 rmpath('.\moored_adcp_proc');
-clear all; close all;
 
 %%  Write netcdf file           
 [yr_start , ~, ~] = gregorian(down_time(1));
