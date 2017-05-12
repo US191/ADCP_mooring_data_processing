@@ -10,8 +10,7 @@
 % - U and V fields interpolated on a regulard grid, filtered and subsampled
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-clear all;
-close all;
+clear all;close all;
 
 % path
 addpath('.\moored_adcp_proc');
@@ -122,4 +121,30 @@ print(hf,graph_name,'-dpdf','-r300');
 
 % rmpath
 rmpath('.\moored_adcp_proc');
-clear all; close all;
+
+%%  Write netcdf file           
+[yr_start , ~, ~] = gregorian(down_time(1));
+[yr_end,  ~, ~] = gregorian(down_time(length(down_time)));
+
+ncid=netcdf.create([fpath_output,'ADCP_',mooring.name, '_',num2str(yr_start),'_',num2str(yr_end),'_1d.nc'],'NC_WRITE');
+ 
+%create dimension
+dimidt = netcdf.defDim(ncid,'time',length(down_time));
+dimidz = netcdf.defDim(ncid,'depth',length(z_final));
+%Define IDs for the dimension variables (pressure,time,latitude,...)
+time_ID=netcdf.defVar(ncid,'time','double',dimidt);
+depth_ID=netcdf.defVar(ncid,'depth','double',dimidz);
+%Define the main variable ()
+u_ID = netcdf.defVar(ncid,'u','double',[dimidt dimidz]);
+v_ID = netcdf.defVar(ncid,'v','double',[dimidt dimidz]);
+%We are done defining the NetCdf
+netcdf.endDef(ncid);
+%Then store the dimension variables in
+netcdf.putVar(ncid,time_ID,down_time);
+netcdf.putVar(ncid,depth_ID,z_final);  
+%Then store my main variable
+netcdf.putVar(ncid,u_ID,u_final);
+netcdf.putVar(ncid,v_ID,v_final);
+%We're done, close the netcdf
+netcdf.close(ncid);
+
