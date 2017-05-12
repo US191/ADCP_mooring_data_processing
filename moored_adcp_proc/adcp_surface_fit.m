@@ -46,6 +46,8 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     figure(1);
     bar(count,ncount);
     title('Histogram of differences between original and reconstructed depth record');
+    ylabel('Frequency');
+    xlabel('Difference of Depth (m)');
     
     figure(2);
     plot(zadcp,'b');
@@ -75,12 +77,18 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     text(300, max(zadcp),['Offset applied: ' num2str(offset) ' m']);
     %,'fonts',12,'fontw','bold','backgroundc','w');
     legend('Original','Reconstructed from surface reflection','Offset applied');
+    ylabel('Depth (m)');
+    xlabel('Time index');
     
     %print -dpng surface_fit;
     
     figure(3);
     pcolor([1:length(x_null)],zbins,ea); shading flat;
-    
+    set(gca,'ydir', 'reverse');
+    ylabel('Corrected Depth (m)');
+    xlabel('Time index');
+    title('Amplitude of the bins with corrected depth');
+
     %print -dpng surface_ea;
 
 end

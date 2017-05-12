@@ -7,6 +7,7 @@ orient tall;
 subplot 321;
 imagesc(time,bin(bins),u(bins,:),[-1 1]);
 set(gca,'YTick',bins);
+ylabel('Bins');
 hold on;
 gregtick;
 title('Meridional velocity before correction');
@@ -15,6 +16,7 @@ subplot 323;
 imagesc(time,bin(bins),u1(bins,:),[-1 1]);
 set(gca,'YTick',bins);
 hold on;
+ylabel('Bins');
 gregtick;
 title('Meridional velocity after correction');
 
@@ -22,13 +24,15 @@ subplot 322;
 imagesc(time,bin(bins),v(bins,:),[-1 1]);
 set(gca,'YTick',bins);
 hold on;
+ylabel('Bins');
 gregtick;
-title('Zonal velocity after correction');
+title('Zonal velocity before correction');
 
 subplot 324;
 imagesc(time,bin(bins),v1(bins,:),[-1 1]);
 set(gca,'YTick',bins);
 hold on;
+ylabel('Bins');
 gregtick;
 title('Zonal velocity after correction');
 
@@ -39,6 +43,7 @@ for i=1:length(bins);
 end
 set(gca,'XLim',[time(1) time(end)]);
 gregtick;
+ylabel('Bins');
 title('Bin depth after correction');
 
 subplot 326;
@@ -48,4 +53,5 @@ for i=1:length(bins);
 end
 set(gca,'XLim',[time(1) time(end)]);
 gregtick;
+ylabel('Bins');
 title('Bin depth after correction');

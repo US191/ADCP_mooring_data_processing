@@ -63,30 +63,30 @@ for iidep = 1:length(intdepvec)
       
 end
 
-
-figure;
-subplot 122;
-imagesc(data.time,intdepvec,uintfilt,[-1 1]);
-set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10]);
-gregtick;
-title('data filtered and subsampled');
-
+hf=figure('position', [0, 0, 1400, 1000]);
 subplot 121;
 imagesc(data.time,intdepvec,ui,[-1 1]);
-set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10]);
+%set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10]);
 gregtick;
-title('data raw');
-
-
-figure;
+ylabel('Bins');
+title('U field - data raw');
 subplot 122;
-imagesc(data.time,intdepvec,vintfilt,[-1 1]);
-set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10]);
+imagesc(data.time,intdepvec,uintfilt,[-1 1]);
+%set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10]);
 gregtick;
-title('data filtered and subsampled');
+ylabel('Bins');
+title('U field - data interpolated, filtered and subsampled');
 
+hf=figure('position', [0, 0, 1400, 1000]);
 subplot 121;
 imagesc(data.time,intdepvec,vi,[-1 1]);
-set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10])
+%set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10])
 gregtick;
-title('data raw');
+ylabel('Bins');
+title('V field - data raw');
+subplot 122;
+imagesc(data.time,intdepvec,vintfilt,[-1 1]);
+%set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10]);
+gregtick;
+ylabel('Bins');
+title('V field - data interpolated, filtered and subsampled');
