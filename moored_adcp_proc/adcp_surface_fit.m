@@ -33,62 +33,58 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     % Find maximum of quadratic fit ax^2+bx+c: 2ax+b=0
     x_null = -coef(2,:)./2./coef(1,:);
 
-    offset=-round(nmedian((x_null-0.5)*blen+blnk)-nmedian(zadcp));
+    %offset=-round(nmedian((x_null-0.5)*blen+blnk)-nmedian(zadcp));
+    offset=-round(((x_null)*blen+blnk)-(zadcp)); %% P. Rousselot - offset over time
     disp('-------------------------------');
-    disp(['Depth offset is ' num2str(offset) ' m']);
+    disp(['Depth offset is ' num2str(nanmean(offset)) ' m']);
     disp('-------------------------------');
     
     
     % Plot histogram of differences
-    dz=((x_null-0.5)*blen+blnk)-zadcp;
+    dz=((x_null)*blen+blnk)-zadcp;
     count=[-100:1:100];
     ncount=hist(-dz,count);
     figure(1);
     bar(count,ncount);
+    grid on
     title('Histogram of differences between original and reconstructed depth record');
-    ylabel('Frequency');
-    xlabel('Difference of Depth (m)');
     
     figure(2);
-    plot(zadcp,'b');
+    plot(-zadcp,'b');
+    grid on
     hold on;
-    plot((x_null-0.5)*blen+blnk,'r');
+    plot(-(x_null)*blen+blnk,'r');
     legend('Original','Reconstructed from surface reflection');
     
-    if abs(offset)>15
-       reply = input('Do you want to overwrite offset? 1/0 [0]:');
-       if isempty(reply)
-          reply = 0;
-       end
-       
-       if reply==1
-           offset=input('Enter new offset:');
-       end
-    end
+%     if abs(offset)>15
+%        reply = input('Do you want to overwrite offset? 1/0 [0]:');
+%        if isempty(reply)
+%           reply = 0;
+%        end
+%        
+%        if reply==1
+%            offset=input('Enter new offset:');
+%        end
+%     end
     
     disp(['Offset of ' num2str(offset) ' m is applied']);
-
+    offset = 19;
     % Apply offset to get correct bin depth and instrument depth:
     zbins=z-offset;
     zadcp1=zadcp-offset;
     
     figure(2);
-    plot(zadcp1,'y');
+    plot(-zadcp1,'y');
     text(300, max(zadcp),['Offset applied: ' num2str(offset) ' m']);
     %,'fonts',12,'fontw','bold','backgroundc','w');
     legend('Original','Reconstructed from surface reflection','Offset applied');
-    ylabel('Depth (m)');
-    xlabel('Time index');
     
     %print -dpng surface_fit;
     
     figure(3);
-    pcolor([1:length(x_null)],zbins,ea); shading flat;
-    set(gca,'ydir', 'reverse');
-    ylabel('Corrected Depth (m)');
-    xlabel('Time index');
-    title('Amplitude of the bins with corrected depth');
-
+    pcolor([1:length(x_null)],-zbins,ea); shading flat;
+    title('Amplitude'); colorbar; ylabel('Depth [m]');xlabel('Time index');
+    
     %print -dpng surface_ea;
 
 end

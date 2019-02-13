@@ -21,22 +21,23 @@ addpath('.\backscatter'); % (Optionnel) / ou par exemple ('C:\Users\IRD_US_IMAGO
 
 % Location rawfile
 fpath = '';
-rawfile='.\data_example\FR24_000.000'; % binary file with .000 extension
+rawfile='.\FR26_000.000'; % binary file with .000 extension
  
 % Directory for outputs
-fpath_output = '.\data_example\';
+fpath_output = '.\FR28\';
 
 % Cruise/mooring info
-cruise.name = 'Cruise Name';
-mooring.name='Lat Lon'; % 0N10W par exemple
+cruise.name = 'PIRATA-FR28';
+mooring.name='0N0E'; % 0N10W par exemple
 mooring.lat=00+00/60; %latitude en degrés décimaux
-mooring.lon=-10+00/60; %longitude en degrés décimaux
+mooring.lon=00+00/60; %longitude en degrés décimaux
+clock_drift = 253/3600; % convert into hrs
 
 % ADCP info
-adcp.sn=15258;
+adcp.sn=22545;
 adcp.type='150 khz Quartermaster'; % Type : ‘Quartermaster’, ‘longranger’
 adcp.direction='up';        % upward-looking 'up', downward-looking 'dn'
-adcp.instr_depth=280;       % nominal instrument depth
+adcp.instr_depth=300;       % nominal instrument depth
 instr=1;                    % this is just for name convention and sorting of all mooring instruments
 
 % If ADCP was not set up to correct for magnetic deviation internally
@@ -44,33 +45,50 @@ instr=1;                    % this is just for name convention and sorting of al
 % Magnetic deviation: Mean of deviations at time of deployment and time of recovery 
 
 % Magnetic deviation values
-magnetic_deviation_ini = 9.29;
-magnetic_deviation_end = 9.05;
-rot=-(magnetic_deviation_ini+magnetic_deviation_end)/2;  
+magnetic_deviation_ini = -5.27;
+magnetic_deviation_end = -4.99;
+rot=(magnetic_deviation_ini+magnetic_deviation_end)/2;  
 
 % Read rawfile
 fprintf('Read %s\n', rawfile);
 raw=read_os3(rawfile,'all');
-figure;plot(raw.pressure);set(gca,'ydir','reverse');
-title('pressure sensor');ylabel('Depth(m)');xlabel('Time index');grid on; 
+
+% Correct clock drift
+time0          = julian(raw.juliandate);
+clockd         = linspace(0, clock_drift, length(time0));
+raw.juliandate = raw.juliandate - clockd / 24;                 % P. Rousselot - change clock drift /24
+
+% Magnetic devitation over time %P . Rousselot
+mag_dev = linspace(magnetic_deviation_ini, magnetic_deviation_end, length(time0)); 
+
+
+figure;plot(raw.pressure);
+detrend_sdata = detrend(raw.pressure);
+trend = raw.pressure - detrend_sdata;
+hold on
+plot(trend, 'r--')
+hold off
+title('Pressure sensor');ylabel('Depth [m]');xlabel('Time index');grid on; 
 saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Pressure_sensor'],'fig')
 
+figure;plot(raw.temperature);
+title('Temperature sensor');ylabel('Temperature [°C]');xlabel('Time index');grid on; 
 % Second part --------------------------------------------------------------------------------------------------------------------
 
 % Determine first and last indiced when instrument was at depth (you can do this by plotting 'raw.pressure' for example           
-first = 12; 
-last = 17620; 
+first = 11; 
+last = 17161; 
 
 % amplitude of the bins / Correction ADCP's depth
 ea = squeeze(mean(raw.amp(:,:,first:last),2));   
-figure; imagesc(ea);title('Amplitude of the bins'); colorbar;
+figure; colormap jet; pcolor(ea); shading flat; title('Amplitude of the bins'); colorbar;
 ylabel('Bins');xlabel('Time index'); 
 saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins'],'fig')
 
 % Third part --------------------------------------------------------------------------------------------------------------------
 
 % If upward looking: range of surface bins used for instrument depth correction below!
-sbins= 31:38; % here a range of bins is given which cover the surface reflection
+sbins= 29:34;%30:35; % here a range of bins is given which cover the surface reflection
 
 % Exclude data with percent good below prct_good
 prct_good = 20;
@@ -87,6 +105,7 @@ ang = [raw.pitch(first:last) raw.roll(first:last) raw.heading(first:last)];
 soundspeed = raw.soundspeed(first:last);
 T = raw.temperature(first:last);
 press = raw.pressure(first:last);
+mag_dev = mag_dev(first:last);
 
 nbin = raw.config.ncells;  % number of bins
 bin  = 1:nbin;
@@ -95,7 +114,9 @@ blnk = raw.config.blank;   % blank distance after transmit
 
 dt=(time(2)-time(1))*24;   % Sampling interval in hours
 
-[u,v]=uvrot(u2,v2,-rot);   % Correction of magnetic deviation
+for ii = 1 : length(mag_dev)
+    [u(:,ii),v(:,ii)]=uvrot(u2(:,ii), v2(:,ii), -mag_dev(ii));   % Correction of magnetic deviation (over time-P. Rousselot)
+end
 
 pg = squeeze(raw.pg(:,4,first:last));  % percent good
 
@@ -113,7 +134,7 @@ binmat = repmat((1:nbin)',1,length(dpt1));
 % If ADCP is upward-looking a depth correction can be inferred from the
 % surface reflection, which is done in adcp_surface_fit
 if strcmp(adcp.direction,'up')  
-    [z,dpt1,offset,xnull]=adcp_surface_fit(dpt,ea,sbins,blen,blnk,nbin);
+    [z,dpt1,offset,xnull]=adcp_surface_fit(-dpt,ea,sbins,blen,blnk,nbin);
 elseif strcmp(adcp.direction,'dn')
     z = dpt1+(binmat-0.5)*blen+blnk;
 else
@@ -131,9 +152,10 @@ if strcmp(adcp.direction,'up')
     for i=1:length(time)
         sz_dpt(i)=adcp_shadowzone(dpt(i),raw.config.sysconfig.angle); % depending on the instrument depth and the beam angle the shadow zone, i.e. the depth below the surface which is contaminated by the surface reflection is determined
 
-        iz(i)=find(z(:,i)>sz_dpt(i),1,'last');
+        iz(i)=find(z(:,i)<-sz_dpt(i),1,'first')-1;
         sbin(i)=bin(iz(i));
         
+        %sbin(i)=30; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % here a manual criterion should be hard-coded if
         % adcp_check_surface (below) shows bad velocities close to the
         % surface
@@ -203,20 +225,22 @@ saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2s
 
 % Save interpolated data
 bin_start = 1; % bin indice where good interpolated data for the whole dataset start
-data.uintfilt=uintfilt(bin_start:length(Z),:);
-data.vintfilt=vintfilt(bin_start:length(Z),:);
-data.Z = Z(bin_start:length(Z));
+bin_end   = length(Z);
+data.uintfilt=uintfilt(bin_start:bin_end,:);
+data.vintfilt=vintfilt(bin_start:bin_end,:);
+data.Z = Z(bin_start:bin_end);
 data.inttim = inttim;
 save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '_int_filt_sub.mat'],'adcp','mooring','data','raw');
 
 %% Figure
-niv_u = (-1.5:0.1:1.5);
-niv_v = (-0.5:0.1:0.5);
+niv_u = (-1:0.05:1);
+niv_v = (-1:0.05:1);
 
 hf=figure('position', [0, 0, 1400, 1000]);
 %u
 subplot(2,1,1);
-[C,h] = contourf(inttim,Z(bin_start:length(Z)),uintfilt(bin_start:length(Z),:),niv_u); 
+colormap jet
+[C,h] = contourf(inttim,Z(bin_start:bin_end),uintfilt(bin_start:bin_end,:),niv_u); 
 set(h,'LineColor','none');
 caxis(niv_u([1 end]));
 h=colorbar;
@@ -226,11 +250,11 @@ ylabel('Depth (m)');
 ylim([0,adcp.instr_depth]);
 %change figure label in HH:MM
 gregtick;
-title({[mooring.name, ' - MERIDIONAL VELOCITY - RDI ',num2str(freq),' kHz']});
+title({[mooring.name, ' - ZONAL VELOCITY - RDI ',num2str(freq),' kHz']});
 
 %v
 subplot(2,1,2);
-[C,h] = contourf(inttim,Z(bin_start:length(Z)),vintfilt(bin_start:length(Z),:),niv_v); 
+[C,h] = contourf(inttim,Z(bin_start:bin_end),vintfilt(bin_start:bin_end,:),niv_v); 
 set(h,'LineColor','none');
 caxis(niv_v([1 end]));
 h=colorbar;
@@ -240,7 +264,7 @@ ylabel('Depth (m)');
 ylim([0,adcp.instr_depth]);
 %change figure label in HH:MM
 gregtick;
-title({[mooring.name, ' - ZONAL VELOCITY - RDI ',num2str(freq),' kHz']});
+title({[mooring.name, ' - MERIDIONAL VELOCITY - RDI ',num2str(freq),' kHz']});
 
 graph_name = [fpath_output, mooring.name '_U_V_int_filt_sub'];
 set(hf,'Units','Inches');

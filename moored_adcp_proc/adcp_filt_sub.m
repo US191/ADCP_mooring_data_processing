@@ -28,7 +28,7 @@ for iidep = 1:length(intdepvec)
       uifilt(iidep,1:length(adcpui)) = adcpui;
       vifilt(iidep,1:length(adcpvi)) = adcpvi;
       % subsampling
-      inttim = [ceil(data.time(1)):0.5:floor(data.time(end))];
+      inttim = [ceil(data.time(1)):0.25:floor(data.time(end))];
       uintfilt(iidep,1:length(inttim)) = interp1(data.time,transpose(uifilt(iidep,:)),inttim);
       vintfilt(iidep,1:length(inttim)) = interp1(data.time,transpose(vifilt(iidep,:)),inttim);
       inttim = inttim;  
@@ -37,7 +37,7 @@ for iidep = 1:length(intdepvec)
       % subsampling
       uifilt(iidep,1:length(adcpui)) = nan;
       vifilt(iidep,1:length(adcpvi)) = nan;
-      inttim = [ceil(data.time(1)):0.5:floor(data.time(end))];
+      inttim = [ceil(data.time(1)):0.25:floor(data.time(end))];
       uintfilt(iidep,1:length(inttim)) =nan;
       vintfilt(iidep,1:length(inttim)) =nan;
       
@@ -54,7 +54,7 @@ for iidep = 1:length(intdepvec)
       uifilt(iidep,1:length(adcpui)) = adcpui;
       vifilt(iidep,1:length(adcpvi)) = adcpvi;
       %subsampling
-      inttim = [ceil(data.time(1)):0.5:floor(data.time(end))];
+      inttim = [ceil(data.time(1)):0.25:floor(data.time(end))];
       uintfilt(iidep,1:length(inttim)) = interp1(timval,transpose(uifilt(iidep,valid)),inttim);
       vintfilt(iidep,1:length(inttim)) = interp1(timval,transpose(vifilt(iidep,valid)),inttim);
       inttim = inttim;

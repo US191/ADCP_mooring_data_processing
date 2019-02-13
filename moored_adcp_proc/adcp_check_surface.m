@@ -1,8 +1,8 @@
 function adcp_check_surface(bins,u,u1,v,v1,time,bin,z)
 
-%c=colormap(jet(length(bins)));
-
+c=colormap(jet(length(bins)));
 figure(4);
+colormap jet
 orient tall;
 subplot 321;
 imagesc(time,bin(bins),u(bins,:),[-1 1]);
