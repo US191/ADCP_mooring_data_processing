@@ -10,7 +10,7 @@ set(gca,'YTick',bins);
 ylabel('Bins');
 hold on;
 gregtick;
-title('Meridional velocity before correction');
+title('Zonal velocity before correction');
 
 subplot 323;
 imagesc(time,bin(bins),u1(bins,:),[-1 1]);
@@ -18,7 +18,7 @@ set(gca,'YTick',bins);
 hold on;
 ylabel('Bins');
 gregtick;
-title('Meridional velocity after correction');
+title('Zonal velocity after correction');
 
 subplot 322;
 imagesc(time,bin(bins),v(bins,:),[-1 1]);
@@ -26,7 +26,7 @@ set(gca,'YTick',bins);
 hold on;
 ylabel('Bins');
 gregtick;
-title('Zonal velocity before correction');
+title('Meridional velocity before correction');
 
 subplot 324;
 imagesc(time,bin(bins),v1(bins,:),[-1 1]);
@@ -34,10 +34,10 @@ set(gca,'YTick',bins);
 hold on;
 ylabel('Bins');
 gregtick;
-title('Zonal velocity after correction');
+title('Meridional velocity after correction');
 
 subplot 325;
-for i=1:length(bins);
+for i=1:length(bins)
     plot(time,hammfilter_nodec(z(bins(i),:),73),'color','k');
     hold on;
 end
@@ -47,7 +47,7 @@ ylabel('Bins');
 title('Bin depth after correction');
 
 subplot 326;
-for i=1:length(bins);
+for i=1:length(bins)
     plot(time,hammfilter_nodec(z(bins(i),:),73),'color','k');
     hold on;
 end

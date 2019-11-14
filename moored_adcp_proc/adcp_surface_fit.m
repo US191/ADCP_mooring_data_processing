@@ -1,32 +1,34 @@
 function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,blen,blnk,nbin);
     
     % Bin depth matrix
-    dpt1 = repmat(zadcp,nbin,1);
+    dpt1   = repmat(zadcp,nbin,1);
     binmat = repmat((1:nbin)',1,length(dpt1));   
-    z = dpt1-(binmat-0.5)*blen-blnk; 
+    z      = dpt1-(binmat-0.5)*blen-blnk; 
     
     % Loop over time, determine bin of maximum ea in surface bin range and 
     % do quadratic fit over 2 neighbouring and center bins   
-    easurf=ea(surface_bins,:);
+    easurf = ea(surface_bins,:);
     for ii=1:length(ea)
-        [eamax,maxind]=max(easurf(:,ii));
+        [eamax,maxind] = max(easurf(:,ii));
         
-        if length(eamax)>1; maxind=maxind(1); end
+        if length(eamax)>1 
+            maxind = maxind(1); 
+        end
         
-        if maxind>1 & eamax>80
-            if surface_bins(maxind)==nbin; 
+        if maxind>1 && eamax>80
+            if surface_bins(maxind)==nbin 
                 xtofit(1:2) = easurf(maxind-1:maxind,ii);
-                xtofit(3) = 0;
+                xtofit(3)   = 0;
             else           
-                xtofit = easurf(maxind-1:maxind+1,ii);
+                xtofit      = easurf(maxind-1:maxind+1,ii);
             end
 
             for jj=1:3
-                A(jj,:)=[(surface_bins(maxind)+jj-2)^2, surface_bins(maxind)+jj-2, 1];
+                A(jj,:) = [(surface_bins(maxind)+jj-2)^2, surface_bins(maxind)+jj-2, 1];
             end 
-            coef(:,ii)= A\xtofit;
+            coef(:,ii) = A\xtofit;
         else
-            coef(:,ii)=NaN;
+            coef(:,ii) = NaN;
         end
     end
     
@@ -34,18 +36,26 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     x_null = -coef(2,:)./2./coef(1,:);
 
     %offset=-round(nmedian((x_null-0.5)*blen+blnk)-nmedian(zadcp));
-    offset=-round(((x_null)*blen+blnk)-(zadcp)); %% P. Rousselot - offset over time
+    offset = round(((x_null-0.5)*blen+blnk)-(zadcp)); %% P. Rousselot - offset over time
     disp('-------------------------------');
     disp(['Depth offset is ' num2str(nanmean(offset)) ' m']);
     disp('-------------------------------');
-    
+    %offset = nanmedian(offset);
+    [offset_clean,~] = clean_median(offset,20,2.8,[0.5 5],2,NaN);
+    lin_offset       = linspace(1,length(offset),length(offset));
+    offset           = interp1(lin_offset(~isnan(offset_clean)),...
+        offset_clean(~isnan(offset_clean)),lin_offset,'linear','extrap');
     
     % Plot histogram of differences
-    dz=((x_null)*blen+blnk)-zadcp;
-    count=[-100:1:100];
-    ncount=hist(-dz,count);
+    dz     = ((x_null-0.5)*blen+blnk)-zadcp;
+    count  = [-20:1:20];
+    ncount = hist(-dz,count);
+    ncount = ncount/length(dz)*100;
     figure(1);
-    bar(count,ncount);
+    bar(count,ncount);  
+    axis([-21 21 0 50])
+    xlabel('Depth difference [m]')
+    ylabel('Occurrence percentage [%]')
     grid on
     title('Histogram of differences between original and reconstructed depth record');
     
@@ -53,7 +63,7 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     plot(-zadcp,'b');
     grid on
     hold on;
-    plot(-(x_null)*blen+blnk,'r');
+    plot(-((x_null-0.5)*blen+blnk),'r');
     legend('Original','Reconstructed from surface reflection');
     
 %     if abs(offset)>15
@@ -67,17 +77,18 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
 %        end
 %     end
     
-    disp(['Offset of ' num2str(offset) ' m is applied']);
-    offset = 19;
+    %disp(['Offset of ' num2str(offset) ' m is applied']);
     % Apply offset to get correct bin depth and instrument depth:
-    zbins=z-offset;
-    zadcp1=zadcp-offset;
+    zbins  = z+offset;
+    zadcp1 = zadcp+offset;
     
     figure(2);
     plot(-zadcp1,'y');
     text(300, max(zadcp),['Offset applied: ' num2str(offset) ' m']);
     %,'fonts',12,'fontw','bold','backgroundc','w');
     legend('Original','Reconstructed from surface reflection','Offset applied');
+    xlabel('Time Index')
+    ylabel('Depth [m]')
     
     %print -dpng surface_fit;
     
