@@ -90,17 +90,14 @@ vtid_baro=0;
 % uintfilt = uintfilt-utid_baro;
 % vintfilt = vintfilt-vtid_baro;
 
-hf=figure('position', [0, 0, 1400, 1000]);
-subplot 121;
+hf=figure('position', [0, 0, 1400, 1000]);subplot 121;
 imagesc(data.time,intdepvec,ui(intdepvec,:),[-1 1]);
 %set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10]);
 gregtick;
 ylabel('Bins');
-title('U field - data raw');
-subplot 122;
+title('U field - data raw');subplot 122;
 imagesc(inttim,intdepvec,uintfilt,[-1 1]);
-%set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10]);
-gregtick;
+%set(gca,'YLim',[min(intdepvec)-10 max(intdepvec)+10]);gregtick;
 ylabel('Bins');
 title('U field - data interpolated, filtered and subsampled');
 

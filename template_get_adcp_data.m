@@ -16,34 +16,26 @@ addpath(genpath('C:\Users\proussel\Documents\outils\ADCP\ADCP_mooring_data_proce
 close all
 clear all
  
-%% META information:
-
 % Path
 addpath('.\moored_adcp_proc'); % ou par exemple ('C:\Users\IRD_US_IMAGO\TRAITEMENTS\ADCP_MOUILLAGE\01_DATA_PROCESSING\moored_adcp_proc');
 addpath('.\backscatter'); % (Optionnel) / ou par exemple ('C:\Users\IRD_US_IMAGO\TRAITEMENTS\ADCP_MOUILLAGE\01_DATA_PROCESSING\backscatter');
 
 % Location rawfile
 fpath = '';
-rawfile='.\FR27_000.000'; % binary file with .000 extension
- 
+rawfile='.\FR27_000.000'; % binary file with .000 extension 
 % Directory for outputs
 fpath_output = '.\FR29_bis\';
-
 % Cruise/mooring info
 cruise.name  = 'PIRATA-FR29';
 mooring.name = '0N10W'; % 0N10W par exemple
 mooring.lat  = 00+00.15/60; %latitude en degrés décimaux
 mooring.lon  = -09-53.15/60; %longitude en degrés décimaux
 clock_drift  = 208/3600; % convert into hrs
-
 % ADCP info
 adcp.sn          = 15258;
 adcp.type        = '150 khz Quartermaster'; % Type : ‘Quartermaster’, ‘longranger’
 adcp.direction   = 'up';        % upward-looking 'up', downward-looking 'dn'
-adcp.instr_depth = 300;       % nominal instrument depth
-instr            = 1;                    % this is just for name convention and sorting of all mooring instruments
-
-% If ADCP was not set up to correct for magnetic deviation internally
+adcp.instr_depth = 300;       % nominal instrument depth% If ADCP was not set up to correct for magnetic deviation internally
 % ("EA0" code in configuration file), use http://www.ngdc.noaa.gov/geomag-web/#declination
 % Magnetic deviation: Mean of deviations at time of deployment and time of recovery 
 
@@ -51,10 +43,10 @@ instr            = 1;                    % this is just for name convention and 
 magnetic_deviation_ini = -9;
 magnetic_deviation_end = -8.77;
 rot                    = (magnetic_deviation_ini+magnetic_deviation_end)/2;  
-
 % Read rawfile
 fprintf('Read %s\n', rawfile);
 raw            = read_os3(rawfile,'all');
+
 
 % Correct clock drift
 time0          = julian(raw.juliandate);
@@ -91,13 +83,11 @@ saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(ins
 
 % If upward looking: range of surface bins used for instrument depth correction below!
 sbins      = 32:39;%30:35; % here a range of bins is given which cover the surface reflection
-
 % Exclude data with percent good below prct_good
 prct_good  = 20;
 
 %% Read data
 freq       = raw.config.sysconfig.frequency;
-
 u2         = squeeze(raw.vel(:,1,first:last));
 v2         = squeeze(raw.vel(:,2,first:last));
 w          = squeeze(raw.vel(:,3,first:last));
@@ -153,8 +143,7 @@ binmat = repmat((1:nbin)',1,length(dpt1));
 if strcmp(adcp.direction,'up')  
     [z,dpt1,offset,xnull] = adcp_surface_fit(dpt,ea,sbins,blen,blnk,nbin);
 elseif strcmp(adcp.direction,'dn')
-    z                     = dpt1+(binmat-0.5)*blen+blnk;
-else
+    z                     = dpt1+(binmat-0.5)*blen+blnk;else
     error('Bin depth calculation: unknown direction!');
 end
 
@@ -241,6 +230,8 @@ end
 [uintfilt,vintfilt,uifilt,vifilt,inttim,utid_baro,vtid_baro] = adcp_filt_sub(data,u_interp',v_interp',1:length(Z),40);
 saveas(figure(5),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','data_raw_filt_subsampled_1'],'fig')
 saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','data_raw_filt_subsampled_2'],'fig')
+saveas(figure(5),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','data_raw_filt_subsampled_1'],'fig')
+saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','data_raw_filt_subsampled_2'],'fig')
 
 save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '_int_filt.mat'],'uifilt','vifilt','data');
 
@@ -250,8 +241,7 @@ bin_end       = length(Z);
 data.uintfilt = uintfilt(bin_start:bin_end,:);
 data.vintfilt = vintfilt(bin_start:bin_end,:);
 data.Z        = Z(bin_start:bin_end);
-data.inttim   = inttim;
-save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '_int_filt_sub.mat'],'adcp','mooring','data','raw');
+data.inttim   = inttim;save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '_int_filt_sub.mat'],'adcp','mooring','data','raw');
 
 %% Figure
 niv_u = (-1:0.05:1);
@@ -275,8 +265,7 @@ title({[mooring.name, ' - ZONAL VELOCITY - RDI ',num2str(freq),' kHz']});
 
 %v
 subplot(2,1,2);
-[C,h] = contourf(inttim,Z(bin_start:bin_end),vintfilt(bin_start:bin_end,:),niv_v); 
-set(h,'LineColor','none');
+[C,h] = contourf(inttim,Z(bin_start:bin_end),vintfilt(bin_start:bin_end,:),niv_v); set(h,'LineColor','none');
 caxis(niv_v([1 end]));
 h     = colorbar;
 ylabel(h,'V [m s^-^1]');
