@@ -56,7 +56,7 @@
 %   Copyright 1988-2011 The MathWorks, Inc.
 %   $Revision: 1.7.4.10 $  $Date: 2012/12/25 21:34:47 $
 
-narginchk(3,3)
+error(nargchk(3,3,nargin,'struct'))
 
 % Only double precision is supported
 if ~isa(b,'double') || ~isa(a,'double') || ~isa(x,'double')

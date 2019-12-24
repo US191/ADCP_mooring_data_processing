@@ -1,4 +1,4 @@
-function z_shadowzone=adcp_shadowzone(adcp_dpt,beamangle);
+function z_shadowzone=adcp_shadowzone(adcp_dpt,beamangle)
 
 % z_shadowzone=adcp_shadowzone(adcp_dpt,beamangle);
 %
@@ -8,4 +8,6 @@ function z_shadowzone=adcp_shadowzone(adcp_dpt,beamangle);
 %
 % R. Kopte, 2014/11/20
 
-z_shadowzone=adcp_dpt*(1-cosd(beamangle));
+z_shadowzone = adcp_dpt*(1-cosd(beamangle));
+
+end
