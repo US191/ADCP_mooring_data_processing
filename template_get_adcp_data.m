@@ -80,7 +80,6 @@ ylabel('Temperature [°C]');
 xlabel('Time index');
 grid on; 
 % Second part --------------------------------------------------------------------------------------------------------------------
-
 %% Determine first and last indiced when instrument was at depth (you can do this by plotting 'raw.pressure' for example            
 first               = input('Determine first indice when instrument was at depth (with pres/temp plot): ');
 last                = input('Determine last indice when instrument was at depth (with pres/temp plot): ');
@@ -220,6 +219,7 @@ Z                   = fliplr(blen/2:blen:max(z(:))+blen);
 Zmax                = max(Z);
 u_interp            = NaN(length(time),length(Z));
 v_interp            = NaN(length(time),length(Z));
+
 for i=1:length(time)
     % indice correspondant sur la grille finale Z
     ind = round((Zmax-z(1,i))/blen)+1;
@@ -265,8 +265,7 @@ title({[mooring.name, ' - ZONAL VELOCITY - RDI ',num2str(freq),' kHz']});
 
 %v
 subplot(2,1,2);
-[C,h] = contourf(inttim,Z(bin_start:bin_end),vintfilt(bin_start:bin_end,:),niv_v); 
-set(h,'LineColor','none');
+[C,h] = contourf(inttim,Z(bin_start:bin_end),vintfilt(bin_start:bin_end,:),niv_v); set(h,'LineColor','none');
 caxis(niv_v([1 end]));
 h     = colorbar;
 ylabel(h,'V [m s^-^1]');
@@ -338,8 +337,8 @@ netcdf.endDef(ncid);
 netcdf.putVar(ncid,time_ID,inttim);
 netcdf.putVar(ncid,depth_ID,Z);  
 %Then store my main variable
-netcdf.putVar(ncid,u_ID,uintfilt);
-netcdf.putVar(ncid,v_ID,vintfilt);
+netcdf.putVar(ncid,u_ID,uintfilt');
+netcdf.putVar(ncid,v_ID,vintfilt');
 %We're done, close the netcdf
 netcdf.close(ncid);
 % -------------------------------------------------------------------------------------------

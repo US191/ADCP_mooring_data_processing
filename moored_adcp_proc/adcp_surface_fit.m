@@ -34,8 +34,7 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     
     % Find maximum of quadratic fit ax^2+bx+c: 2ax+b=0
     x_null = -coef(2,:)./2./coef(1,:);
-    
-    
+
     %% Calculate offset
     offset = round(((x_null-0.5)*blen+blnk)-(zadcp));     
     disp('-------------------------------');
@@ -47,6 +46,7 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     lin_offset       = linspace(1,length(offset),length(offset));
     offset           = interp1(lin_offset(~isnan(offset_clean)),...
         offset_clean(~isnan(offset_clean)),lin_offset,'linear','extrap');
+
     % offset median
     %offset = nanmedian(offset);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,8 +55,12 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     dz     = ((x_null-0.5)*blen+blnk)-zadcp;
     count  = [-100:1:100];
     ncount = hist(-dz,count);
+
     figure(1);
-    bar(count,ncount);
+    bar(count,ncount);  
+    axis([-21 21 0 50])
+    xlabel('Depth difference [m]')
+    ylabel('Occurrence percentage [%]')
     grid on
     title('Histogram of differences between original and reconstructed depth record');
     
@@ -86,6 +90,8 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     plot(-zadcp1,'y');
     text(300, max(zadcp),['Offset applied: ' num2str(offset) ' m']);
     legend('Original','Reconstructed from surface reflection','Offset applied');   
+    xlabel('Time Index')
+    ylabel('Depth [m]')
     %print -dpng surface_fit;
     
     figure(3);

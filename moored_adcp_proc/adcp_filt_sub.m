@@ -16,8 +16,7 @@ for iidep = 1:length(intdepvec)
       adcpui                           = interp1(timval,adcpui(valid),data.time);
       adcpvi                           = interp1(timval,adcpvi(valid),data.time);
       sum(isnan(adcpui));
-      sum(isnan(adcpvi));
-      
+      sum(isnan(adcpvi));     
       
       %% Hamming filter
       adcpui(valid(1):valid(end))      = mfilter(adcpui(valid(1):valid(end)),sf,1/nhours,0,2*nhours,1);
@@ -26,11 +25,11 @@ for iidep = 1:length(intdepvec)
       %% Fourier filter
 %       [adcpui(valid(1):valid(end))]  = fft_filter(adcpui(valid(1):valid(end)),2,[24 Inf]);
 %       [adcpvi(valid(1):valid(end))]  = fft_filter(adcpvi(valid(1):valid(end)),2,[24 Inf]);
-          
-      
+             
       %% subsampling
       uifilt(iidep,1:length(adcpui))   = adcpui;
       vifilt(iidep,1:length(adcpvi))   = adcpvi;
+
       inttim                           = [ceil(data.time(1)):0.25:floor(data.time(end))];
       uintfilt(iidep,1:length(inttim)) = interp1(data.time,transpose(uifilt(iidep,:)),inttim);
       vintfilt(iidep,1:length(inttim)) = interp1(data.time,transpose(vifilt(iidep,:)),inttim);
@@ -42,8 +41,7 @@ for iidep = 1:length(intdepvec)
       vifilt(iidep,1:length(adcpvi))   = NaN;
       inttim                           = [ceil(data.time(1)):0.25:floor(data.time(end))];
       uintfilt(iidep,1:length(inttim)) = NaN;
-      vintfilt(iidep,1:length(inttim)) = NaN;
-      
+      vintfilt(iidep,1:length(inttim)) = NaN;    
       
   else
       
@@ -59,6 +57,7 @@ for iidep = 1:length(intdepvec)
       %% Subsampling
       uifilt(iidep,1:length(adcpui))   = adcpui;
       vifilt(iidep,1:length(adcpvi))   = adcpvi;
+
       inttim                           = [ceil(data.time(1)):0.25:floor(data.time(end))];
       uintfilt(iidep,1:length(inttim)) = interp1(timval,transpose(uifilt(iidep,valid)),inttim);
       vintfilt(iidep,1:length(inttim)) = interp1(timval,transpose(vifilt(iidep,valid)),inttim);
