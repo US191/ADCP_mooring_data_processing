@@ -1,9 +1,13 @@
-function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,blen,blnk,nbin)
+function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,blen,tlen,lag,blnk,nbin,fbind)
     
     % Bin depth matrix
     dpt1   = repmat(zadcp,nbin,1);
     binmat = repmat((1:nbin)',1,length(dpt1));   
-    z      = dpt1-(binmat-0.5)*blen-blnk; 
+    
+    z(1,:)      = dpt1(1,:)-(tlen+blen+lag)*0.5-blnk;
+    for ii = 2:length(binmat(:,1))
+        z(ii,:) = z(1,:)-(binmat(ii,:)-1.5)*blen; 
+    end
     
     % Loop over time, determine bin of maximum ea in surface bin range and 
     % do quadratic fit over 2 neighbouring and center bins   
@@ -36,11 +40,11 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     x_null = -coef(2,:)./2./coef(1,:);
 
     %% Calculate offset
-    offset = round(((x_null-0.5)*blen+blnk)-(zadcp));     
+    offset = round(((x_null-1.5)*blen+fbind)-(zadcp));     
     disp('-------------------------------');
-    disp(['Depth offset is ' num2str(round(nanmean(offset))) ' m']);
+    disp(['Depth offset is around ' num2str(round(nanmean(offset))) ' m']);
     disp('-------------------------------');
-    
+    disp(['Cleaned median filter offset is applied']);
     % offset over time cleaned (median filter)
     [offset_clean,~] = clean_median(offset,20,2.8,[0.5 5],2,NaN);
     lin_offset       = linspace(1,length(offset),length(offset));
@@ -52,7 +56,7 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     %% Plot histogram of differences
-    dz     = ((x_null-0.5)*blen+blnk)-zadcp;
+    dz     = ((x_null-1.5)*blen+fbind)-zadcp;
     count  = [-100:1:100];
     ncount = hist(-dz,count);
 
@@ -88,7 +92,6 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     
     figure(2);
     plot(-zadcp1,'y');
-    text(300, max(zadcp),['Offset applied: ' num2str(offset) ' m']);
     legend('Original','Reconstructed from surface reflection','Offset applied');   
     xlabel('Time Index')
     ylabel('Depth [m]')
