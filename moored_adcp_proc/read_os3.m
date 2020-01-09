@@ -21,9 +21,9 @@ out.vel = 0; out.cor = 0; out.amp = 0; out.ts = 0; out.bt = 0; out.pg = 0;
 out.nav = 0; out.ends = 0;
 
 get_numeric = 0;
-for iarg = 1:(nargin-1),
+for iarg = 1:(nargin-1)
    arg = varargin{iarg};
-   if ischar(arg),
+   if ischar(arg)
       get_numeric = 0;
       switch lower(arg)
          case 'ends', out.ends = 1;

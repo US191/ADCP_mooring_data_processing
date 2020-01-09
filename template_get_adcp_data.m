@@ -64,7 +64,6 @@ title('Pressure sensor');
 ylabel('Depth [m]');
 xlabel('Time index');
 grid on; 
-saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Pressure_sensor'],'fig')
 
 subplot(2,1,2)
 plot(raw.temperature);
@@ -72,29 +71,13 @@ title('Temperature sensor');
 ylabel('Temperature [°C]');
 xlabel('Time index');
 grid on; 
-% Second part --------------------------------------------------------------------------------------------------------------------
+saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Pressure_Temp_sensor'],'fig')
+
 %% Determine first and last indiced when instrument was at depth (you can do this by plotting 'raw.pressure' for example        
 disp('****')
 first               = input('Determine first indice when instrument was at depth (with pres/temp plot): ');
 disp('****')
 last                = input('Determine last indice when instrument was at depth (with pres/temp plot): ');
-
-%% amplitude of the bins / Correction ADCP's depth
-ea                  = squeeze(mean(raw.amp(:,:,first:last),2));   
-figure; 
-colormap jet; 
-pcolor(ea); 
-shading flat; 
-title('Amplitude of the bins'); colorbar;
-ylabel('Bins');
-xlabel('Time index'); 
-saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins'],'fig')
-
-% Third part --------------------------------------------------------------------------------------------------------------------
-
-%% If upward looking: determine range of surface bins used for instrument depth correction below!
-disp('****')
-sbins               = input('Determine range of surface bins used for instrument depth correction (with aplitude plot, ie. 30:35): ');
 
 %% Correct velocity data with external T/S sensor
 
@@ -104,6 +87,9 @@ u2                  = squeeze(raw.vel(:,1,first:last));
 v2                  = squeeze(raw.vel(:,2,first:last));
 w                   = squeeze(raw.vel(:,3,first:last));
 vel_err             = squeeze(raw.vel(:,4,first:last));  % the difference in vertical velocity between the two pairs of transducers 
+corr                = squeeze(mean(raw.cor(:,4,first:last),2));
+ea                  = squeeze(mean(raw.amp(:,:,first:last),2));   
+pg                  = squeeze(raw.pg(:,4,first:last));
 time                = raw.juliandate(first:last);
 ang                 = [raw.pitch(first:last) raw.roll(first:last) raw.heading(first:last)]; 
 soundspeed          = raw.soundspeed(first:last);
@@ -128,7 +114,7 @@ magnetic_deviation_ini  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(1)-
 magnetic_deviation_end  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(end)-julian(a,1,1,0,0,0))/365.25);
 rot                     = (magnetic_deviation_ini+magnetic_deviation_end)/2;  
 mag_dev                 = linspace(magnetic_deviation_ini, magnetic_deviation_end, length(time0)); 
-mag_dev             = mag_dev(first:last);
+mag_dev                 = mag_dev(first:last);
 
 %% Correction of magnetic deviation
 disp('****')
@@ -138,14 +124,94 @@ for ii = 1 : length(mag_dev)
 end
 
 %% Correct percent good: Exclude data with percent good below prct_good
+figure; 
+colormap jet; 
+pcolor(pg); 
+shading flat; 
+title('Percent good of the bins'); colorbar;
+ylabel('Bins');
+xlabel('Time index'); 
+saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Perceent_good'],'fig')
 disp('****')
-prct_good           = input('Determine percent good threshold (generally 20): ');
-pg                  = squeeze(raw.pg(:,4,first:last));  
+prct_good           = input('Determine percent good threshold (generally 20): ');  
 igap                = find(pg<prct_good);           % Exclude data with percent good below prct_good
 u(igap)             = NaN;
 v(igap)             = NaN;
 w(igap)             = NaN;
 vel_err(igap)       = NaN;
+ea(igap)            = NaN;
+corr(igap)          = NaN;
+
+%% Correction data with high attitude (pitch/roll)
+figure;
+subplot(2,1,1)
+plot(abs(ang(:,1)));
+hold on
+plot(10*ones(1,length(ang(:,1))),'--r');
+hold off
+title('Attitude sensor');
+ylabel('Pitch [°]');
+xlabel('Time index');
+axis([0 length(ang(:,1)) 0 20])
+grid on; 
+
+subplot(2,1,2)
+plot(abs(ang(:,2)));
+hold on
+plot(10*ones(1,length(ang(:,1))),'--r');
+hold off
+ylabel('Roll [°]');
+xlabel('Time index');
+axis([0 length(ang(:,1)) 0 20])
+grid on; 
+saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Attitude'],'fig')
+disp('****')
+disp('Delete high attitude ADCP data (>=10°)');
+
+high_pitch = find(abs(ang(:,1))>=10);
+high_roll  = find(abs(ang(:,2))>=10);
+if ~isempty(high_pitch) || ~isempty(high_roll)
+    high_att           = input('Are you ok? 1/0 [1]');
+    if isempty(high_att)
+        high_att = 1;
+    end
+    if high_att == 1
+        high_att                = union(high_pitch,high_roll);
+        offset(high_att)        = NaN;
+        ang(high_att,1)         = NaN;
+        ang(high_att,2)         = NaN;
+        ang(high_att,3)         = NaN;
+        mag_dev(high_att)       = NaN;
+        u(high_att)             = NaN;
+        v(high_att)             = NaN;
+        w(high_att)             = NaN;
+        vel_err(high_att)       = NaN;
+        ea(high_att)            = NaN;
+        corr(high_att)          = NaN;
+        pg(high_att)            = NaN;
+        time(high_att)          = NaN;
+        z_bins(high_att)        = NaN;
+        depth(high_att)         = NaN;
+        temp(high_att)          = NaN;
+        soundspeed(high_att)    = NaN;
+        mooring.lat(high_att)   = NaN;
+        mooring.lon(high_att)   = NaN;
+    end
+end
+
+%% amplitude of the bins / Correction ADCP's depth
+figure; 
+colormap jet; 
+pcolor(ea); 
+shading flat; 
+title('Amplitude of the bins'); colorbar;
+ylabel('Bins');
+xlabel('Time index'); 
+saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins'],'fig')
+
+%% If upward looking: determine range of surface bins used for instrument depth correction below!
+disp('****')
+sbins               = input('Determine range of surface bins used for instrument depth correction (with aplitude plot, ie. 30:35): ');
 
 %% Calculate depth of each bin:
 dpt                 = sw_dpth(press,mooring.lat)';  % convert pressure to depth, press needs to have dimension (n x 1)
@@ -157,7 +223,10 @@ disp('****')
 if strcmp(adcp.direction,'up')  
     [z,dpt1,offset,xnull] = adcp_surface_fit(dpt,ea,sbins,blen,tlen,lag,blnk,nbin,fbind);
 elseif strcmp(adcp.direction,'dn')
-    z                     = dpt1+(binmat-0.5)*blen+blnk;
+    z(1,:) = dpt1(1,:)+(tlen+blen+lag)*0.5+blnk;
+    for ii = 2:length(binmat(:,1))
+        z(ii,:) = z(1,:)+(binmat(ii,:)-1.5)*blen; 
+    end
 else
     error('Bin depth calculation: unknown direction!');
 end
@@ -167,14 +236,15 @@ saveas(figure(2),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2s
 saveas(figure(3),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins_2'],'fig')
 
 %% Remove bad data if ADCP is looking upward
-u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea;
+u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea; corr1=corr;
+disp('****')
+disp('Remove bad data near surface due to sidelobe');
 
 if strcmp(adcp.direction,'up')
     for i = 1:length(time)
         sz_dpt(i) = adcp_shadowzone(dpt1(i),raw.config.sysconfig.angle); % depending on the instrument depth and the beam angle the shadow zone, i.e. the depth below the surface which is contaminated by the surface reflection is determined
         iz(i)     = find(z(:,i)>sz_dpt(i),1,'last');
-        sbin(i)   = bin(iz(i));
-        
+        sbin(i)   = bin(iz(i));  
         %sbin(i)=30; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % here a manual criterion should be hard-coded if
         % adcp_check_surface (below) shows bad velocities close to the
@@ -184,15 +254,27 @@ if strcmp(adcp.direction,'up')
         w1(sbin(i)+1:end,i)       = NaN;
         vel_err1(sbin(i)+1:end,i) = NaN;
         ea1(sbin(i)+1:end,i)      = NaN;
+        corr1(sbin(i)+1:end,i)    = NaN;
     end
 
     if 1
-        bins = nmedian(sbin)-4:nmedian(sbin)+2;
-        adcp_check_surface(bins,u,u1,v,v1,time,bin,z); 
+        bins           = nmedian(sbin)-4:nmedian(sbin)+4;
+        adcp_check_surface(bins,u,u1,v,v1,corr,corr1,time,bin,z,sz_dpt); 
         % here the closest bins below the surface are plotted that are supposed to have good velocities, if there are still bad velocities a manual criterion needs to be found
+        reply_sidelobe = input('Do you want to apply manual criterion? 1/0 [0]:');
+        if reply_sidelobe
+            bin_cutoff = input('->Enter new bin cutoff value:');
+            u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea; corr1=corr;
+            u1(bin_cutoff+1:end,i)       = NaN;
+            v1(bin_cutoff+1:end,i)       = NaN;
+            w1(bin_cutoff+1:end,i)       = NaN;
+            vel_err1(bin_cutoff+1:end,i) = NaN;
+            ea1(bin_cutoff+1:end,i)      = NaN;
+            corr1(bin_cutoff+1:end,i)    = NaN;
+        end
     end
 end
-saveas(figure(4),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Meridional_zonal_velocity'],'fig')
+saveas(figure(7),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Meridional_zonal_velocity'],'fig')
 
 %% SAVE DATA
 % More meta information
@@ -211,7 +293,7 @@ data.ea             = ea1;
 data.pg             = pg;
 data.time           = time;
 data.z_bins         = z;
-data.depth          = dpt;
+data.depth          = dpt1;
 data.temp           = temp;
 data.sspd           = soundspeed;
 data.lat            = mooring.lat;

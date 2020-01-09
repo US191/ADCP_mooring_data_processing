@@ -4,7 +4,7 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     dpt1   = repmat(zadcp,nbin,1);
     binmat = repmat((1:nbin)',1,length(dpt1));   
     
-    z(1,:)      = dpt1(1,:)-(tlen+blen+lag)*0.5-blnk;
+    z(1,:) = dpt1(1,:)-(tlen+blen+lag)*0.5-blnk;
     for ii = 2:length(binmat(:,1))
         z(ii,:) = z(1,:)-(binmat(ii,:)-1.5)*blen; 
     end
@@ -44,7 +44,6 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     disp('-------------------------------');
     disp(['Depth offset is around ' num2str(round(nanmean(offset))) ' m']);
     disp('-------------------------------');
-    disp(['Cleaned median filter offset is applied']);
     % offset over time cleaned (median filter)
     [offset_clean,~] = clean_median(offset,20,2.8,[0.5 5],2,NaN);
     lin_offset       = linspace(1,length(offset),length(offset));
@@ -59,16 +58,17 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     dz     = ((x_null-1.5)*blen+fbind)-zadcp;
     count  = [-100:1:100];
     ncount = hist(-dz,count);
+    ncount = ncount/length(dz)*100;
 
-    figure(1);
+    figure;
     bar(count,ncount);  
-    axis([-21 21 0 50])
+    axis([-50 50 0 100])
     xlabel('Depth difference [m]')
     ylabel('Occurrence percentage [%]')
     grid on
-    title('Histogram of differences between original and reconstructed depth record');
+    title('Histogram of differences between depth record calculated with pressure sensor and from surface detection');
     
-    figure(2);
+    figure(6);
     plot(-zadcp,'b');
     grid on
     hold on;
@@ -82,7 +82,9 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
        end
        
        if reply==1
-           offset=input('Enter new offset:');
+           offset=input('->Enter new offset:');
+       else
+            disp(['->Cleaned median filter offset is applied']);          
        end
     end
     
@@ -90,14 +92,14 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     zbins  = z+offset;
     zadcp1 = zadcp+offset;
     
-    figure(2);
+    figure(6);
     plot(-zadcp1,'y');
     legend('Original','Reconstructed from surface reflection','Offset applied');   
     xlabel('Time Index')
     ylabel('Depth [m]')
     %print -dpng surface_fit;
     
-    figure(3);
+    figure;
     pcolor([1:length(x_null)],-zbins,ea); shading flat;
     title('Amplitude'); colorbar; ylabel('Depth [m]');xlabel('Time index');
     %print -dpng surface_ea;
