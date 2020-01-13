@@ -1,4 +1,4 @@
-function adcp_check_surface(bins,u,u1,v,v1,corr,corr1,time,bin,z,sz_dpt)
+function adcp_check_surface(bins,u,u1,v,v1,corr,corr1,time,bin,z,z1,sz_dpt)
 
 c=colormap(jet(length(bins)));
 figure(8);
@@ -62,6 +62,7 @@ subplot 337;
 for i=1:length(bins)
     plot(time,-hammfilter_nodec(z(bins(i),:),73),'color','k');
     hold on;
+    plot(time,-hammfilter_nodec(z1(bins(i),:),73),'color','g');
 end
 plot(time,-sz_dpt,'--r')
 set(gca,'XLim',[time(1) time(end)]);
@@ -73,6 +74,7 @@ subplot 338;
 for i=1:length(bins)
     plot(time,-hammfilter_nodec(z(bins(i),:),73),'color','k');
     hold on;
+    plot(time,-hammfilter_nodec(z1(bins(i),:),73),'color','g');
 end
 plot(time,-sz_dpt,'--r')
 set(gca,'XLim',[time(1) time(end)]);
@@ -84,6 +86,7 @@ subplot 339;
 for i=1:length(bins)
     plot(time,-hammfilter_nodec(z(bins(i),:),73),'color','k');
     hold on;
+    plot(time,-hammfilter_nodec(z1(bins(i),:),73),'color','g');
 end
 plot(time,-sz_dpt,'--r')
 set(gca,'XLim',[time(1) time(end)]);

@@ -106,6 +106,7 @@ lag                 = raw.config.lag;         % transmit lag distance
 blnk                = raw.config.blank;       % blank distance after transmit
 fbind               = raw.config.bin1distance;% middle of first bin distance
 dt                  = (time(2)-time(1))*24;   % Sampling interval in hours
+EA0                 = round(mean(ea(nbin,:)));
 
 %% Calculate Magnetic deviation values
 [a,~]                   = gregorian(raw.juliandate(1));
@@ -231,12 +232,12 @@ else
     error('Bin depth calculation: unknown direction!');
 end
 
-saveas(figure(1),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Histdiff_depth'],'fig')
-saveas(figure(2),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Offset_depth'],'fig')
-saveas(figure(3),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins_2'],'fig')
+saveas(figure(5),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Histdiff_depth'],'fig')
+saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Offset_depth'],'fig')
+saveas(figure(7),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins_2'],'fig')
 
 %% Remove bad data if ADCP is looking upward
-u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea; corr1=corr;
+u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea; corr1=corr; z1=z;
 disp('****')
 disp('Remove bad data near surface due to sidelobe');
 
@@ -255,26 +256,33 @@ if strcmp(adcp.direction,'up')
         vel_err1(sbin(i)+1:end,i) = NaN;
         ea1(sbin(i)+1:end,i)      = NaN;
         corr1(sbin(i)+1:end,i)    = NaN;
+        z1(sbin(i)+1:end,i)       = NaN;
     end
 
     if 1
         bins           = nmedian(sbin)-4:nmedian(sbin)+4;
-        adcp_check_surface(bins,u,u1,v,v1,corr,corr1,time,bin,z,sz_dpt); 
+        adcp_check_surface(bins,u,u1,v,v1,corr,corr1,time,bin,z,z1,sz_dpt); 
         % here the closest bins below the surface are plotted that are supposed to have good velocities, if there are still bad velocities a manual criterion needs to be found
         reply_sidelobe = input('Do you want to apply manual criterion? 1/0 [0]:');
+        if isempty(reply_sidelobe)
+            reply_sidelobe = 0;
+        end
         if reply_sidelobe
             bin_cutoff = input('->Enter new bin cutoff value:');
-            u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea; corr1=corr;
-            u1(bin_cutoff+1:end,i)       = NaN;
-            v1(bin_cutoff+1:end,i)       = NaN;
-            w1(bin_cutoff+1:end,i)       = NaN;
-            vel_err1(bin_cutoff+1:end,i) = NaN;
-            ea1(bin_cutoff+1:end,i)      = NaN;
-            corr1(bin_cutoff+1:end,i)    = NaN;
-        end
+            u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea; corr1=corr; z1=z;
+            u1(bin_cutoff+1:end,:)       = NaN;
+            v1(bin_cutoff+1:end,:)       = NaN;
+            w1(bin_cutoff+1:end,:)       = NaN;
+            vel_err1(bin_cutoff+1:end,:) = NaN;
+            ea1(bin_cutoff+1:end,:)      = NaN;
+            corr1(bin_cutoff+1:end,:)    = NaN;
+            z1(bin_cutoff+1:end,:)       = NaN;
+            adcp_check_surface(bins,u,u1,v,v1,corr,corr1,time,bin,z,z1,sz_dpt); 
+        end       
     end
 end
 saveas(figure(7),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Meridional_zonal_velocity'],'fig')
+
 
 %% SAVE DATA
 % More meta information
@@ -292,7 +300,7 @@ data.e              = vel_err1;
 data.ea             = ea1;
 data.pg             = pg;
 data.time           = time;
-data.z_bins         = z;
+data.z_bins         = z1;
 data.depth          = dpt1;
 data.temp           = temp;
 data.sspd           = soundspeed;
@@ -306,11 +314,9 @@ if isempty(reply_ts)
 end
 if reply_ts == 1
     % EA0: noisefloor from ADCP electronic noise; a scalar
-    disp('****')
-    disp('Calculate Target Strength')
-    disp('EA0=18 (noisefloor from ADCP electronic noise) ; pH=8.1; (seawater pH)')
-    EA0 = 18;
-    file_ctd        = input('Path to CTD .nc file [''*.nc'']:');
+    disp('->Calculate Target Strength')
+    disp(['->EA0=' num2str(EA0) '(noisefloor from ADCP electronic noise) ; pH=8.1; (seawater pH)'])
+    file_ctd        = input('->Path to CTD .nc file [''*.nc'']:');
     if exist(file_ctd, 'file')
         ctd.depth = ncread(file_ctd, 'PRES');
         ctd.temp  = ncread(file_ctd, 'TEMP');
@@ -325,7 +331,7 @@ if reply_ts == 1
         end
         % Compute TS
         [sspd,~]  = meshgrid(soundspeed,1:nbin);
-        data.ts   = target_strength(data.ea,EA0,ctd.salR,ctd.tempR,sspd,temp',soundspeed',adcp.config.cell,adcp.config.blank,adcp.config.sysconfig.angle,freq);
+        data.ts   = target_strength(data.ea,EA0,ctd.salR,ctd.tempR,sspd,temp',soundspeed',z,adcp.config.cell,adcp.config.blank,adcp.config.sysconfig.angle,freq);
         figure;
         colormap jet;
         pcolor(data.ts.ts);
@@ -343,7 +349,7 @@ end
 %% Save raw data
 disp('****')
 disp('Saving raw data')
-save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '.mat'],'adcp','mooring','data','raw','-v7.3');
+save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '.mat'],'adcp','mooring','data','-v7.3');
 
 %% Interpolate data on a regular vertical grid
 Z                   = fliplr(blen/2:blen:max(z(:))+blen);
@@ -393,7 +399,7 @@ save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',i
 %% Figure
 niv_u               = (-1:0.05:1);
 niv_v               = (-1:0.05:1);
-
+close all
 hf=figure('position', [0, 0, 1400, 1000]);
 %u
 subplot(2,1,1);
@@ -432,7 +438,7 @@ print(hf,graph_name,'-dpdf','-r300');
 if reply_ts == 1
 hf=figure('position', [0, 0, 1400, 500]);
 colormap jet
-[C,h] = contourf(inttim,Z(bin_start:bin_end),tsintfilt(bin_start:bin_end,:)); set(h,'LineColor','none');
+pcolor(inttim,Z(bin_start:bin_end),tsintfilt(bin_start:bin_end,:)); shading interp; 
 h     = colorbar;
 ylabel(h,'Target Strength [dB1]');
 set(gca,'ydir', 'reverse');
@@ -446,7 +452,7 @@ graph_name = [fpath_output, mooring.name '_TS_int_filt_sub'];
 set(hf,'Units','Inches');
 pos        = get(hf,'Position');
 set(hf,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)]);
-print(hf,graph_name,'-dpdf','-r300');
+saveas(hf,graph_name,'jpeg');
 end
 
 
