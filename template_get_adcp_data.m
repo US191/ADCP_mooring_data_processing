@@ -15,15 +15,15 @@ addpath('/home/proussel/Documents/OUTILS/TOOLS/nansuite'); % NaNSuitePath
 % First part --------------------------------------------------------------------------------------------------------------------
 %% META information:
 % Location rawfile
-rawfile          = './FR26_000.000';        % binary file with .000 extension
-fpath_output     = './FR28/';               % Output directory
+rawfile          = './FR27_000.000';        % binary file with .000 extension
+fpath_output     = './FR29/';               % Output directory
  
 % Cruise/mooring info
-cruise.name      = 'PIRATA-FR28';           % cruise name
-mooring.name     = '0N0W';                  % '0N10W'
-mooring.lat      = '00°01.060';             % latitude [°']
-mooring.lon      = '-000°00.330';           % longitude [°']
-clock_drift      = 0/3600;                  % [seconds]
+cruise.name      = 'PIRATA-FR29';           % cruise name
+mooring.name     = '0N10W';                 % '0N10W'
+mooring.lat      = '00°01.25';              % latitude [°']
+mooring.lon      = '-009°52.67';            % longitude [°']
+clock_drift      = 208;                     % [seconds]
 
 % ADCP info
 adcp.sn          = 15258;                   % ADCP serial number
