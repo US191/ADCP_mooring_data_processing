@@ -4,3 +4,6 @@
 *.mat
 *.docx
 FR*/
+IDMX*/
+old_data/
+doc/*.pdf

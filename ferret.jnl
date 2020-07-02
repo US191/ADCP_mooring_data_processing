@@ -1,0 +1,10 @@
+ ! NOAA/PMEL TMAP
+ ! PyFerret v7.5 (optimized)
+ ! Linux 4.15.0-1064-azure - 12/16/19
+ ! 19-May-20 17:50     
+
+set mode verify
+use ADCP_0N130E_2013_2016_1d.nc
+sh d
+pcolor U
+shade U

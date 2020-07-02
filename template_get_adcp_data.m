@@ -10,44 +10,51 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 close all; clear
 addpath(genpath('../ADCP_mooring_data_processing'));
-addpath('/home/proussel/Documents/OUTILS/TOOLS/nansuite'); % NaNSuitePath
+addpath('C:\Users\proussel\Documents\OUTILS\TOOLS\nansuite'); % NaNSuitePath
 
 % First part --------------------------------------------------------------------------------------------------------------------
 %% META information:
 % Location rawfile
-rawfile          = './FR26_000.000';        % binary file with .000 extension
-fpath_output     = './FR28/';               % Output directory
- 
+rawfile          = 'C:\Users\proussel\Documents\OUTILS\ADCP\ADCP_mooring_data_processing\IDMX2\_RDI_001.000';        % binary file with .000 extension
+fpath_output     = './IDMX2/';               % Output directory
+
 % Cruise/mooring info
-cruise.name      = 'PIRATA-FR28';           % cruise name
-mooring.name     = '0N0W';                  % '0N10W'
-mooring.lat      = '00째01.060';             % latitude [째']
-mooring.lon      = '-000째00.330';           % longitude [째']
-clock_drift      = 0/3600;                  % [seconds]
+cruise.name      = 'INDOMIX';           % cruise name
+mooring.name     = '0N130E';                  % '0N10W'
+mooring.lat      = '00�04.066';%405';             % latitude [�']
+mooring.lon      = '129�12.41';%247';           % longitude [�']
+clock_drift      = 0;                  % [seconds]
 
 % ADCP info
-adcp.sn          = 15258;                   % ADCP serial number
-adcp.type        = '150 khz Quartermaster'; % Type : Quartermaster, longranger
+adcp.sn          = 13952;                   % ADCP serial number
+adcp.type        = '75 khz Quartermaster'; % Type : Quartermaster, longranger
 adcp.direction   = 'up';                    % upward-looking 'up', downward-looking 'dn'
-adcp.instr_depth = 300;                     % nominal instrument depth
-instr            = 1;                       % this is just for name convention and sorting of all mooring instruments
+adcp.instr_depth = 600;                     % nominal instrument depth
+instr            = 2;                       % this is just for name convention and sorting of all mooring instruments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Convert variables
-latDegInd               = strfind(mooring.lat,'째');  
-lonDegInd               = strfind(mooring.lon,'째');  
+latDegInd               = strfind(mooring.lat,'�');
+lonDegInd               = strfind(mooring.lon,'�');
 mooring.lat             = str2double(mooring.lat(1:latDegInd-1))+str2double(mooring.lat(latDegInd+1:end-1))/60;
 mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))+str2double(mooring.lon(lonDegInd+1:end-1))/60;
 clock_drift             = clock_drift/3600;  % convert into hrs
 
 %% Read rawfile
 disp('****')
-fprintf('Read %s\n', rawfile);
-raw                     = read_os3(rawfile,'all');
+raw_file                = [fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '_raw.mat'];
+if exist(raw_file)
+    fprintf('Read %s\n', raw_file);
+    load(raw_file)
+else
+    fprintf('Read %s\n', rawfile);
+    raw                 = read_os3(rawfile,'all');
+    save(raw_file,'raw','-v7.3');
+end
 
 %% Correct clock drift
 time0                   = julian(raw.juliandate);
 clockd                  = linspace(0, clock_drift, length(time0));
-raw.juliandate          = raw.juliandate - clockd / 24;  
+raw.juliandate          = raw.juliandate - clockd / 24;
 disp('****')
 disp('Correct clock drift')
 
@@ -63,17 +70,17 @@ hold off
 title('Pressure sensor');
 ylabel('Depth [m]');
 xlabel('Time index');
-grid on; 
+grid on;
 
 subplot(2,1,2)
 plot(raw.temperature);
 title('Temperature sensor');
 ylabel('Temperature [째C]');
 xlabel('Time index');
-grid on; 
+grid on;
 saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Pressure_Temp_sensor'],'fig')
 
-%% Determine first and last indiced when instrument was at depth (you can do this by plotting 'raw.pressure' for example        
+%% Determine first and last indiced when instrument was at depth (you can do this by plotting 'raw.pressure' for example
 disp('****')
 first               = input('Determine first indice when instrument was at depth (with pres/temp plot): ');
 disp('****')
@@ -86,12 +93,12 @@ freq                = raw.config.sysconfig.frequency;
 u2                  = squeeze(raw.vel(:,1,first:last));
 v2                  = squeeze(raw.vel(:,2,first:last));
 w                   = squeeze(raw.vel(:,3,first:last));
-vel_err             = squeeze(raw.vel(:,4,first:last));  % the difference in vertical velocity between the two pairs of transducers 
+vel_err             = squeeze(raw.vel(:,4,first:last));  % the difference in vertical velocity between the two pairs of transducers
 corr                = squeeze(mean(raw.cor(:,4,first:last),2));
-ea                  = squeeze(mean(raw.amp(:,:,first:last),2));   
+ea                  = squeeze(mean(raw.amp(:,:,first:last),2));
 pg                  = squeeze(raw.pg(:,4,first:last));
 time                = raw.juliandate(first:last);
-ang                 = [raw.pitch(first:last) raw.roll(first:last) raw.heading(first:last)]; 
+ang                 = [raw.pitch(first:last) raw.roll(first:last) raw.heading(first:last)];
 soundspeed          = raw.soundspeed(first:last);
 temp                = raw.temperature(first:last);
 press               = raw.pressure(first:last);
@@ -113,28 +120,28 @@ EA0                 = round(mean(ea(nbin,:)));
 magnetic_deviation_ini  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(1)-julian(a,1,1,0,0,0))/365.25);
 [a,~]                   = gregorian(raw.juliandate(end));
 magnetic_deviation_end  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(end)-julian(a,1,1,0,0,0))/365.25);
-rot                     = (magnetic_deviation_ini+magnetic_deviation_end)/2;  
-mag_dev                 = linspace(magnetic_deviation_ini, magnetic_deviation_end, length(time0)); 
+rot                     = (magnetic_deviation_ini+magnetic_deviation_end)/2;
+mag_dev                 = linspace(magnetic_deviation_ini, magnetic_deviation_end, length(time0));
 mag_dev                 = mag_dev(first:last);
 
 %% Correction of magnetic deviation
 disp('****')
 disp('Correct magnetic deviation')
 for ii = 1 : length(mag_dev)
-    [u(:,ii),v(:,ii)] = uvrot(u2(:,ii), v2(:,ii), -mag_dev(ii));   
+    [u(:,ii),v(:,ii)] = uvrot(u2(:,ii), v2(:,ii), -mag_dev(ii));
 end
 
 %% Correct percent good: Exclude data with percent good below prct_good
-figure; 
-colormap jet; 
-pcolor(pg); 
-shading flat; 
+figure;
+colormap jet;
+pcolor(pg);
+shading flat;
 title('Percent good of the bins'); colorbar;
 ylabel('Bins');
-xlabel('Time index'); 
+xlabel('Time index');
 saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Perceent_good'],'fig')
 disp('****')
-prct_good           = input('Determine percent good threshold (generally 20): ');  
+prct_good           = input('Determine percent good threshold (generally 20): ');
 igap                = find(pg<prct_good);           % Exclude data with percent good below prct_good
 u(igap)             = NaN;
 v(igap)             = NaN;
@@ -154,7 +161,7 @@ title('Attitude sensor');
 ylabel('Pitch [째]');
 xlabel('Time index');
 axis([0 length(ang(:,1)) 0 20])
-grid on; 
+grid on;
 
 subplot(2,1,2)
 plot(abs(ang(:,2)));
@@ -164,15 +171,15 @@ hold off
 ylabel('Roll [째]');
 xlabel('Time index');
 axis([0 length(ang(:,1)) 0 20])
-grid on; 
+grid on;
 saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Attitude'],'fig')
 disp('****')
-disp('Delete high attitude ADCP data (>=10째)');
+disp('Delete high attitude ADCP data (>=10�)');
 
 high_pitch = find(abs(ang(:,1))>=10);
 high_roll  = find(abs(ang(:,2))>=10);
 if ~isempty(high_pitch) || ~isempty(high_roll)
-    high_att           = input('Are you ok? 1/0 [1]');
+    high_att           = input('Do you want to delete them? 1/0 [1]');
     if isempty(high_att)
         high_att = 1;
     end
@@ -195,94 +202,130 @@ if ~isempty(high_pitch) || ~isempty(high_roll)
         depth(high_att)         = NaN;
         temp(high_att)          = NaN;
         soundspeed(high_att)    = NaN;
-        mooring.lat(high_att)   = NaN;
-        mooring.lon(high_att)   = NaN;
     end
 end
 
 %% amplitude of the bins / Correction ADCP's depth
-figure; 
-colormap jet; 
-pcolor(ea); 
-shading flat; 
+figure;
+colormap jet;
+pcolor(ea);
+shading flat;
 title('Amplitude of the bins'); colorbar;
 ylabel('Bins');
-xlabel('Time index'); 
+xlabel('Time index');
 saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins'],'fig')
 
 %% If upward looking: determine range of surface bins used for instrument depth correction below!
 disp('****')
-sbins               = input('Determine range of surface bins used for instrument depth correction (with aplitude plot, ie. 30:35): ');
-
-%% Calculate depth of each bin:
-dpt                 = sw_dpth(press,mooring.lat)';  % convert pressure to depth, press needs to have dimension (n x 1)
-dpt1                = repmat(dpt,nbin,1);
-binmat              = repmat((1:nbin)',1,length(dpt1));
-
-% If ADCP is upward-looking a depth correction can be inferred from the surface reflection, which is done in adcp_surface_fit
-disp('****')
-if strcmp(adcp.direction,'up')  
-    [z,dpt1,offset,xnull] = adcp_surface_fit(dpt,ea,sbins,blen,tlen,lag,blnk,nbin,fbind);
-elseif strcmp(adcp.direction,'dn')
-    z(1,:) = dpt1(1,:)+(tlen+blen+lag)*0.5+blnk;
-    for ii = 2:length(binmat(:,1))
-        z(ii,:) = z(1,:)+(binmat(ii,:)-1.5)*blen; 
-    end
-else
-    error('Bin depth calculation: unknown direction!');
+surface_bins = input('Do you want to apply an offset using surface reflection? 1/0 [1]');
+if isempty(surface_bins)
+    surface_bins = 1;
 end
-
-saveas(figure(5),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Histdiff_depth'],'fig')
-saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Offset_depth'],'fig')
-saveas(figure(7),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins_2'],'fig')
+if surface_bins == 1
+    sbins               = input('Determine range of surface bins used for instrument depth correction (with aplitude plot, ie. 30:35): ');
+    
+    %% Calculate depth of each bin:
+    dpt                 = sw_dpth(press,mooring.lat)';  % convert pressure to depth, press needs to have dimension (n x 1)
+    dpt1                = repmat(dpt,nbin,1);
+    binmat              = repmat((1:nbin)',1,length(dpt1));
+    
+    % If ADCP is upward-looking a depth correction can be inferred from the surface reflection, which is done in adcp_surface_fit
+    disp('****')
+    if strcmp(adcp.direction,'up')
+        [z,dpt1,offset,xnull] = adcp_surface_fit(dpt,ea,sbins,blen,tlen,lag,blnk,nbin,fbind);
+    elseif strcmp(adcp.direction,'dn')
+        z(1,:) = dpt1(1,:)+(tlen+blen+lag)*0.5+blnk;
+        for ii = 2:length(binmat(:,1))
+            z(ii,:) = z(1,:)+(binmat(ii,:)-1.5)*blen;
+        end
+    else
+        error('Bin depth calculation: unknown direction!');
+    end
+    
+    saveas(figure(5),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Histdiff_depth'],'fig')
+    saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Offset_depth'],'fig')
+    saveas(figure(7),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins_2'],'fig')
+else
+    dpt                 = sw_dpth(press,mooring.lat)';  % convert pressure to depth, press needs to have dimension (n x 1)
+    dpt1                = repmat(dpt,nbin,1);
+    z                   = dpt;
+    figure
+    plot(dpt)
+    hold on
+    plot(adcp.instr_depth*ones(length(dpt),1),'--r')
+    hold off
+    grid on
+    axis([0 length(dpt) min(min(dpt,adcp.instr_depth*ones(1,length(dpt))))-50 max(max(dpt,adcp.instr_depth*ones(1,length(dpt))))+50])
+    xlabel('Ensembles')
+    ylabel('Depth [m]')
+    legend('Depth','Nominal Depth')
+    offset = input('Do you want to apply a manual offset? 1/0 [0]');
+    if isempty(offset)
+        offset           = 0;
+    elseif offset == 1
+        offset          = input('->Enter new offset:');
+        dpt             = dpt + offset;
+        dpt1            = dpt1 + offset;
+        z               = z + offset;
+        hold on
+        plot(dpt,'g')
+        hold off
+        legend('Depth', 'Nominal Depth', 'Corrected depth')
+    elseif offset == 0
+        offset           = 0;
+    end
+    
+    
+end
 
 %% Remove bad data if ADCP is looking upward
 u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea; corr1=corr; z1=z;
-disp('****')
-disp('Remove bad data near surface due to sidelobe');
-
-if strcmp(adcp.direction,'up')
-    for i = 1:length(time)
-        sz_dpt(i) = adcp_shadowzone(dpt1(i),raw.config.sysconfig.angle); % depending on the instrument depth and the beam angle the shadow zone, i.e. the depth below the surface which is contaminated by the surface reflection is determined
-        iz(i)     = find(z(:,i)>sz_dpt(i),1,'last');
-        sbin(i)   = bin(iz(i));  
-        %sbin(i)=30; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % here a manual criterion should be hard-coded if
-        % adcp_check_surface (below) shows bad velocities close to the
-        % surface
-        u1(sbin(i)+1:end,i)       = NaN;
-        v1(sbin(i)+1:end,i)       = NaN;
-        w1(sbin(i)+1:end,i)       = NaN;
-        vel_err1(sbin(i)+1:end,i) = NaN;
-        ea1(sbin(i)+1:end,i)      = NaN;
-        corr1(sbin(i)+1:end,i)    = NaN;
-        z1(sbin(i)+1:end,i)       = NaN;
-    end
-
-    if 1
-        bins           = nmedian(sbin)-4:nmedian(sbin)+4;
-        adcp_check_surface(bins,u,u1,v,v1,corr,corr1,time,bin,z,z1,sz_dpt); 
-        % here the closest bins below the surface are plotted that are supposed to have good velocities, if there are still bad velocities a manual criterion needs to be found
-        reply_sidelobe = input('Do you want to apply manual criterion? 1/0 [0]:');
-        if isempty(reply_sidelobe)
-            reply_sidelobe = 0;
+if surface_bins == 1
+    disp('****')
+    disp('Remove bad data near surface due to sidelobe');
+    
+    if strcmp(adcp.direction,'up')
+        for i = 1:length(time)
+            sz_dpt(i) = adcp_shadowzone(dpt1(i),raw.config.sysconfig.angle); % depending on the instrument depth and the beam angle the shadow zone, i.e. the depth below the surface which is contaminated by the surface reflection is determined
+            iz(i)     = find(z(:,i)>sz_dpt(i),1,'last');
+            sbin(i)   = bin(iz(i));
+            %sbin(i)=30; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % here a manual criterion should be hard-coded if
+            % adcp_check_surface (below) shows bad velocities close to the
+            % surface
+            u1(sbin(i)+1:end,i)       = NaN;
+            v1(sbin(i)+1:end,i)       = NaN;
+            w1(sbin(i)+1:end,i)       = NaN;
+            vel_err1(sbin(i)+1:end,i) = NaN;
+            ea1(sbin(i)+1:end,i)      = NaN;
+            corr1(sbin(i)+1:end,i)    = NaN;
+            z1(sbin(i)+1:end,i)       = NaN;
         end
-        if reply_sidelobe
-            bin_cutoff = input('->Enter new bin cutoff value:');
-            u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea; corr1=corr; z1=z;
-            u1(bin_cutoff+1:end,:)       = NaN;
-            v1(bin_cutoff+1:end,:)       = NaN;
-            w1(bin_cutoff+1:end,:)       = NaN;
-            vel_err1(bin_cutoff+1:end,:) = NaN;
-            ea1(bin_cutoff+1:end,:)      = NaN;
-            corr1(bin_cutoff+1:end,:)    = NaN;
-            z1(bin_cutoff+1:end,:)       = NaN;
-            adcp_check_surface(bins,u,u1,v,v1,corr,corr1,time,bin,z,z1,sz_dpt); 
-        end       
+        
+        if 1
+            bins           = nmedian(sbin)-4:nmedian(sbin)+4;
+            adcp_check_surface(bins,u,u1,v,v1,corr,corr1,time,bin,z,z1,sz_dpt);
+            % here the closest bins below the surface are plotted that are supposed to have good velocities, if there are still bad velocities a manual criterion needs to be found
+            reply_sidelobe = input('Do you want to apply manual criterion? 1/0 [0]:');
+            if isempty(reply_sidelobe)
+                reply_sidelobe = 0;
+            end
+            if reply_sidelobe
+                bin_cutoff = input('->Enter new bin cutoff value:');
+                u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea; corr1=corr; z1=z;
+                u1(bin_cutoff+1:end,:)       = NaN;
+                v1(bin_cutoff+1:end,:)       = NaN;
+                w1(bin_cutoff+1:end,:)       = NaN;
+                vel_err1(bin_cutoff+1:end,:) = NaN;
+                ea1(bin_cutoff+1:end,:)      = NaN;
+                corr1(bin_cutoff+1:end,:)    = NaN;
+                z1(bin_cutoff+1:end,:)       = NaN;
+                adcp_check_surface(bins,u,u1,v,v1,corr,corr1,time,bin,z,z1,sz_dpt);
+            end
+        end
     end
+    saveas(figure(7),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Meridional_zonal_velocity'],'fig')
 end
-saveas(figure(7),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Meridional_zonal_velocity'],'fig')
-
 
 %% SAVE DATA
 % More meta information
@@ -345,7 +388,7 @@ if reply_ts == 1
         reply_ts = 0;
     end
 end
-       
+
 %% Save raw data
 disp('****')
 disp('Saving raw data')
@@ -377,10 +420,49 @@ if reply_ts == 0
 end
 %% Horizontal interpolation, filtering and subsampling
 disp('****')
-disp('Filtering using 40h Hamming filter (other disponible filter: FFT filter, tide model)'),
-[uintfilt,vintfilt,tsintfilt,inttim,utid_baro,vtid_baro] = adcp_filt_sub(data,u_interp',v_interp',ts_interp',1:length(Z),reply_ts);
+horz_interp            = input('Do you want to do an horizontal interpolation? 1/0 [1]:');
+if isempty(horz_interp)
+    horz_interp        = 1;
+end
+
+if horz_interp
+    filt            = input('Do you want to filter tide? 1/0 [1]:');
+    if isempty(filt)
+        filt        = 1;
+    end
+    
+    sub            = input('Do you want to subsampling data daily? 1/0 [1]:');
+    if isempty(filt)
+        sub        = 1;
+    end
+    if filt
+        if sub
+            disp('Horizontal interpolation, Filtering & Subsampling')
+        else
+            disp('Horizontal interpolation & Filtering')
+        end
+        disp('Filtering using 40h Hamming filter (other disponible filter: FFT filter, tide model)')
+    else
+        if sub
+            disp('Horizontal interpolation & Subsampling')
+        else
+            disp('Horizontal interpolation')
+        end
+    end
+else
+    filt = 0;
+    sub  = 0;
+end
+
+[uintfilt,vintfilt,tsintfilt,inttim,utid_baro,vtid_baro] = adcp_filt_sub(data,u_interp',v_interp',ts_interp',1:length(Z),reply_ts, filt, sub);
 saveas(figure(5),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','data_raw_filt_subsampled_1'],'fig')
 saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','data_raw_filt_subsampled_2'],'fig')
+
+if horz_interp == 0    
+    uintfilt      = u_interp';
+    vintfilt      = v_interp';
+    inttim        = data.time;
+end
 
 %% Save interpolated data
 disp('****')
@@ -404,55 +486,68 @@ hf=figure('position', [0, 0, 1400, 1000]);
 %u
 subplot(2,1,1);
 colormap jet
-[C,h] = contourf(inttim,Z(bin_start:bin_end),uintfilt(bin_start:bin_end,:),niv_u); 
+[C,h] = contourf(inttim,Z(bin_start:bin_end),uintfilt(bin_start:bin_end,:),niv_u);
 set(h,'LineColor','none');
 caxis(niv_u([1 end]));
 h=colorbar;
 ylabel(h,'U [m s^-^1]');
 set(gca,'ydir', 'reverse');
 ylabel('Depth (m)');
-ylim([0,adcp.instr_depth]);
+ylim([0,round(max(max(z,adcp.instr_depth)))]);
 %change figure label in HH:MM
 gregtick;
-title({[mooring.name, ' - ZONAL VELOCITY - RDI ',num2str(freq),' kHz']});
+if filt
+    title({[mooring.name, ' - ZONAL VELOCITY - RDI ',num2str(freq),' kHz (filtered from tide)']});
+else
+    title({[mooring.name, ' - ZONAL VELOCITY - RDI ',num2str(freq),' kHz']});
+end
 
 %v
 subplot(2,1,2);
-[C,h] = contourf(inttim,Z(bin_start:bin_end),vintfilt(bin_start:bin_end,:),niv_v); set(h,'LineColor','none');
+[C,h] = contourf(inttim,Z(bin_start:bin_end),vintfilt(bin_start:bin_end,:),niv_v);
+set(h,'LineColor','none');
 caxis(niv_v([1 end]));
 h     = colorbar;
 ylabel(h,'V [m s^-^1]');
 set(gca,'ydir', 'reverse');
 ylabel('Depth (m)');
-ylim([0,adcp.instr_depth]);
+ylim([0,round(max(max(z,adcp.instr_depth)))]);
 %change figure label in HH:MM
 gregtick;
-title({[mooring.name, ' - MERIDIONAL VELOCITY - RDI ',num2str(freq),' kHz']});
+if filt
+    title({[mooring.name, ' - MERIDIONAL VELOCITY - RDI ',num2str(freq),' kHz (filtered from tide)']});
+else
+    title({[mooring.name, ' - MERIDIONAL VELOCITY - RDI ',num2str(freq),' kHz']});
+end
 
-graph_name = [fpath_output, mooring.name '_U_V_int_filt_sub'];
+graph_name = [fpath_output, mooring.name '_', num2str(instr), '_U_V_int_filt_sub'];
 set(hf,'Units','Inches');
 pos        = get(hf,'Position');
 set(hf,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)]);
 print(hf,graph_name,'-dpdf','-r300');
 
 if reply_ts == 1
-hf=figure('position', [0, 0, 1400, 500]);
-colormap jet
-pcolor(inttim,Z(bin_start:bin_end),tsintfilt(bin_start:bin_end,:)); shading interp; 
-h     = colorbar;
-ylabel(h,'Target Strength [dB1]');
-set(gca,'ydir', 'reverse');
-ylabel('Depth (m)');
-ylim([0,adcp.instr_depth]);
-%change figure label in HH:MM
-gregtick;
-title({[mooring.name, ' - TARGET STRENGTH - RDI ',num2str(freq),' kHz']});   
-
-graph_name = [fpath_output, mooring.name '_TS_int_filt_sub'];
-set(hf,'Units','Inches');
-pos        = get(hf,'Position');
-set(hf,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)]);
-saveas(hf,graph_name,'jpeg');
+    hf=figure('position', [0, 0, 1400, 500]);
+    colormap jet
+    pcolor(inttim,Z(bin_start:bin_end),tsintfilt(bin_start:bin_end,:)); shading interp;
+    h     = colorbar;
+    ylabel(h,'Target Strength [dB1]');
+    set(gca,'ydir', 'reverse');
+    ylabel('Depth (m)');
+    ylim([0,round(max(max(z,adcp.instr_depth)))]);
+    %change figure label in HH:MM
+    gregtick;
+    if filt
+        title({[mooring.name, ' - TARGET STRENGTH - RDI ',num2str(freq),' kHz (filtered from tide)']});
+    else
+        title({[mooring.name, ' - TARGET STRENGTH - RDI ',num2str(freq),' kHz']});
+    end
+    
+    graph_name = [fpath_output, mooring.name, '_', num2str(instr), '_TS_int_filt_sub'];
+    set(hf,'Units','Inches');
+    pos        = get(hf,'Position');
+    set(hf,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)]);
+    saveas(hf,graph_name,'jpeg');
 end
 
 
@@ -465,7 +560,7 @@ end
 % %u
 % subplot(2,1,1);
 % colormap jet
-% [C,h] = contourf(inttim,Z(bin_start:bin_end),utid_baro(bin_start:bin_end,:),niv_tide); 
+% [C,h] = contourf(inttim,Z(bin_start:bin_end),utid_baro(bin_start:bin_end,:),niv_tide);
 % set(h,'LineColor','none');
 % caxis(niv_tide([1 end]));
 % h=colorbar;
@@ -476,10 +571,10 @@ end
 % %change figure label in HH:MM
 % gregtick;
 % title({[mooring.name, ' - ZONAL TIDE VELOCITY - RDI ',num2str(freq),' kHz']});
-% 
+%
 % %v
 % subplot(2,1,2);
-% [C,h] = contourf(inttim,Z(bin_start:bin_end),vtid_baro(bin_start:bin_end,:),niv_tide); 
+% [C,h] = contourf(inttim,Z(bin_start:bin_end),vtid_baro(bin_start:bin_end,:),niv_tide);
 % set(h,'LineColor','none');
 % caxis(niv_tide([1 end]));
 % h     = colorbar;
@@ -491,17 +586,17 @@ end
 % gregtick;
 % title({[mooring.name, ' - MERIDIONAL TIDE VELOCITY - RDI ',num2str(freq),' kHz']});
 
-%%  Write netcdf file     
+%%  Write netcdf file
 disp('****')
 disp('Creating .nc file')
 [yr_start , ~, ~] = gregorian(inttim(1));
 [yr_end,  ~, ~]   = gregorian(inttim(length(inttim)));
 
 ncid     = netcdf.create([fpath_output,'ADCP_',mooring.name,'_',num2str(yr_start),'_',num2str(yr_end),'_1d.nc'],'NC_WRITE');
- 
+
 %create dimension
 dimidt   = netcdf.defDim(ncid,'time',length(inttim));
-dimidz   = netcdf.defDim(ncid,'depth',length(Z));
+dimidz   = netcdf.defDim(ncid,'depth',length(data.Z));
 %Define IDs for the dimension variables (pressure,time,latitude,...)
 time_ID  = netcdf.defVar(ncid,'time','double',dimidt);
 depth_ID = netcdf.defVar(ncid,'depth','double',dimidz);
@@ -515,12 +610,12 @@ end
 netcdf.endDef(ncid);
 %Then store the dimension variables in
 netcdf.putVar(ncid,time_ID,inttim);
-netcdf.putVar(ncid,depth_ID,Z);  
+netcdf.putVar(ncid,depth_ID,data.Z);
 %Then store my main variable
-netcdf.putVar(ncid,u_ID,uintfilt');
-netcdf.putVar(ncid,v_ID,vintfilt');
+netcdf.putVar(ncid,u_ID,data.uintfilt');
+netcdf.putVar(ncid,v_ID,data.vintfilt');
 if reply_ts == 1
-    netcdf.putVar(ncid,ts_ID,tsintfilt');
+    netcdf.putVar(ncid,ts_ID,data.tsintfilt');
 end
 %We're done, close the netcdf
 netcdf.close(ncid);

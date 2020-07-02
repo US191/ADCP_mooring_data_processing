@@ -1,4 +1,4 @@
-function [uintfilt,vintfilt,tsintfilt,inttim,utid_baro,vtid_baro]=adcp_filt_sub(data,ui,vi,tsi,intdepvec,reply_ts)
+function [uintfilt,vintfilt,tsintfilt,inttim,utid_baro,vtid_baro]=adcp_filt_sub(data,ui,vi,tsi,intdepvec,reply_ts,filt,sub)
 
 %% Filtering parameters
 sf     = 1/((data.time(2)-data.time(1))*24);
@@ -6,6 +6,12 @@ nhours = 40;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+if sub
+    inttim = [ceil(data.time(1)):0.25:floor(data.time(end))];
+else
+    inttim = data.time;
+end
+      
 for iidep = 1:length(intdepvec)
     
   adcpui  = ui(iidep,:);
@@ -28,29 +34,38 @@ for iidep = 1:length(intdepvec)
       sum(isnan(adcpui));
       sum(isnan(adcpvi));     
       
-      %% Hamming filter
-      adcpui(valid(1):valid(end))      = mfilter(adcpui(valid(1):valid(end)),sf,1/nhours,0,2*nhours,1);
-      adcpvi(valid(1):valid(end))      = mfilter(adcpvi(valid(1):valid(end)),sf,1/nhours,0,2*nhours,1);
-      if reply_ts == 1
-        adcptsi(valid(1):valid(end))   = mfilter(adcptsi(valid(1):valid(end)),sf,1/nhours,0,2*nhours,1);
+      if filt
+          %% Hamming filter
+          adcpui(valid(1):valid(end))      = mfilter(adcpui(valid(1):valid(end)),sf,1/nhours,0,2*nhours,1);
+          adcpvi(valid(1):valid(end))      = mfilter(adcpvi(valid(1):valid(end)),sf,1/nhours,0,2*nhours,1);
+          if reply_ts == 1
+              adcptsi(valid(1):valid(end))   = mfilter(adcptsi(valid(1):valid(end)),sf,1/nhours,0,2*nhours,1);
+          end
+          
+          %% Fourier filter
+          %       [adcpui(valid(1):valid(end))]  = fft_filter(adcpui(valid(1):valid(end)),2,[24 Inf]);
+          %       [adcpvi(valid(1):valid(end))]  = fft_filter(adcpvi(valid(1):valid(end)),2,[24 Inf]);
       end
       
-      %% Fourier filter
-%       [adcpui(valid(1):valid(end))]  = fft_filter(adcpui(valid(1):valid(end)),2,[24 Inf]);
-%       [adcpvi(valid(1):valid(end))]  = fft_filter(adcpvi(valid(1):valid(end)),2,[24 Inf]);
-             
       %% subsampling
       uifilt(iidep,1:length(adcpui))   = adcpui;
       vifilt(iidep,1:length(adcpvi))   = adcpvi;
       if reply_ts == 1
-        tsifilt(iidep,1:length(adcptsi)) = adcptsi;
+          tsifilt(iidep,1:length(adcptsi)) = adcptsi;
       end
       
-      inttim                           = [ceil(data.time(1)):0.25:floor(data.time(end))];
-      uintfilt(iidep,1:length(inttim)) = interp1(data.time,transpose(uifilt(iidep,:)),inttim);
-      vintfilt(iidep,1:length(inttim)) = interp1(data.time,transpose(vifilt(iidep,:)),inttim);
-      if reply_ts == 1
-          tsintfilt(iidep,1:length(inttim)) = interp1(data.time,transpose(tsifilt(iidep,:)),inttim);
+      if sub
+          uintfilt(iidep,1:length(inttim)) = interp1(data.time,transpose(uifilt(iidep,:)),inttim);
+          vintfilt(iidep,1:length(inttim)) = interp1(data.time,transpose(vifilt(iidep,:)),inttim);
+          if reply_ts == 1
+              tsintfilt(iidep,1:length(inttim)) = interp1(data.time,transpose(tsifilt(iidep,:)),inttim);
+          end
+      else
+          uintfilt(iidep,1:length(inttim)) = uifilt(iidep,:);
+          vintfilt(iidep,1:length(inttim)) = vifilt(iidep,:);
+          if reply_ts == 1
+              tsintfilt(iidep,1:length(inttim)) = tsifilt(iidep,:);
+          end
       end
       
   elseif length(valid)<=1 || length(valid(1):valid(end))<=240
@@ -60,8 +75,8 @@ for iidep = 1:length(intdepvec)
       vifilt(iidep,1:length(adcpvi))   = NaN;
       if reply_ts == 1
           tsifilt(iidep,1:length(adcptsi)) = NaN;
-      end      
-      inttim                           = [ceil(data.time(1)):0.25:floor(data.time(end))];
+      end  
+      
       uintfilt(iidep,1:length(inttim)) = NaN;
       vintfilt(iidep,1:length(inttim)) = NaN;   
       if reply_ts == 1
@@ -78,13 +93,15 @@ for iidep = 1:length(intdepvec)
           adcptsi                      = interp1(timval,adcptsi(valid),data.time); 
       end
       
-      %% Hamming filter
-      adcpui                           = mfilter(adcpui,sf,1/nhours,0,2*nhours,1);
-      adcpvi                           = mfilter(adcpvi,sf,1/nhours,0,2*nhours,1);
-      if reply_ts == 1
-          adcptsi                           = mfilter(adcptsi,sf,1/nhours,0,2*nhours,1);
+      if filt
+          %% Hamming filter
+          adcpui                           = mfilter(adcpui,sf,1/nhours,0,2*nhours,1);
+          adcpvi                           = mfilter(adcpvi,sf,1/nhours,0,2*nhours,1);
+          if reply_ts == 1
+              adcptsi                           = mfilter(adcptsi,sf,1/nhours,0,2*nhours,1);
+          end
       end
-
+      
       %% Subsampling
       uifilt(iidep,1:length(adcpui))   = adcpui;
       vifilt(iidep,1:length(adcpvi))   = adcpvi;
@@ -92,13 +109,19 @@ for iidep = 1:length(intdepvec)
           tsifilt(iidep,1:length(adcptsi))   = adcptsi;
       end
 
-      inttim                           = [ceil(data.time(1)):0.25:floor(data.time(end))];
-      uintfilt(iidep,1:length(inttim)) = interp1(timval,transpose(uifilt(iidep,valid)),inttim);
-      vintfilt(iidep,1:length(inttim)) = interp1(timval,transpose(vifilt(iidep,valid)),inttim);
-      if reply_ts == 1
-          tsintfilt(iidep,1:length(inttim)) = interp1(timval,transpose(tsifilt(iidep,valid)),inttim);
+      if sub
+          uintfilt(iidep,1:length(inttim)) = interp1(timval,transpose(uifilt(iidep,valid)),inttim);
+          vintfilt(iidep,1:length(inttim)) = interp1(timval,transpose(vifilt(iidep,valid)),inttim);
+          if reply_ts == 1
+              tsintfilt(iidep,1:length(inttim)) = interp1(timval,transpose(tsifilt(iidep,valid)),inttim);
+          end
+      else
+          uintfilt(iidep,1:length(inttim)) = uifilt(iidep,:);
+          vintfilt(iidep,1:length(inttim)) = vifilt(iidep,:);
+          if reply_ts == 1
+              tsintfilt(iidep,1:length(inttim)) = tsifilt(iidep,:);
+          end
       end
-      inttim                           = inttim;
       
   end
       
