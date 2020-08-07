@@ -72,7 +72,7 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     plot(-zadcp,'b');
     grid on
     hold on;
-    plot(-((x_null-0.5)*blen+blnk),'r');
+    plot(-((x_null-1.5)*blen+fbind),'r');
     legend('Original','Reconstructed from surface reflection');
     
     if abs(offset)>15

@@ -5,16 +5,16 @@
 clear all; close all;
 
 %% Variables
-FileToMerge1     = 'C:\Users\proussel\Documents\OUTILS\ADCP\ADCP_mooring_data_processing\FR28\ADCP_0N0W_2016_2018_1d.nc'; %.nc file to merge with
-FileToMerge2     = 'C:\Users\proussel\Documents\OUTILS\ADCP\ADCP_mooring_data_processing\FR30\ADCP_0N0W_2018_2020_1d.nc'; %.nc file to merge
-FileToMerge1     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2013_1d.nc'; %.nc file to merge with
-FileToMerge2     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2016_1d.nc'; %.nc file to merge
+FileToMerge1     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/FR28/ADCP_0N0W_2016_2018_1d.nc'; %.nc file to merge with
+FileToMerge2     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/FR30/ADCP_0N0W_2018_2020_1d.nc'; %.nc file to merge
+% FileToMerge1     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2013_1d.nc'; %.nc file to merge with
+% FileToMerge2     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2016_1d.nc'; %.nc file to merge
 step_subsampling = 1; % 1=daily
 plot_data        = 0;
 mooring.name     = '0N0E';
 freq             = '150';
-mooring.name     = '0N130E';
-freq             = '75';
+% mooring.name     = '0N130E';
+% freq             = '75';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Read first .nc file
 ncfile1.time  = ncread(FileToMerge1,'time');
@@ -128,7 +128,7 @@ netcdf.putAtt(ncid, v_ID, 'long_name', 'Meridional velocities');
 %We are done defining the NetCdf
 netcdf.endDef(ncid);
 %Then store the dimension variables in
-netcdf.putVar(ncid, depth_ID, depth(1,:));
+netcdf.putVar(ncid, depth_ID, depth);
 netcdf.putVar(ncid, time_ID, 0, length(time), time);
 %Then store my main variable
 netcdf.putVar(ncid, u_ID, u');

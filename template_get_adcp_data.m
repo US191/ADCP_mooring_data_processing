@@ -10,31 +10,31 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 close all; clear
 addpath(genpath('../ADCP_mooring_data_processing'));
-addpath('C:\Users\proussel\Documents\OUTILS\TOOLS\nansuite'); % NaNSuitePath
+addpath('/home/proussel/Documents/OUTILS/TOOLS/nansuite'); % NaNSuitePath
 
 % First part --------------------------------------------------------------------------------------------------------------------
 %% META information:
 % Location rawfile
-rawfile          = 'C:\Users\proussel\Documents\OUTILS\ADCP\ADCP_mooring_data_processing\IDMX2\_RDI_001.000';        % binary file with .000 extension
-fpath_output     = './IDMX2/';               % Output directory
+rawfile          = '/home/proussel/Bureau/piratafr30/MOUILLAGE_ADCP/FR28_000.000';        % binary file with .000 extension
+fpath_output     = './FR30/';               % Output directory
 
 % Cruise/mooring info
-cruise.name      = 'INDOMIX';           % cruise name
-mooring.name     = '0N130E';                  % '0N10W'
-mooring.lat      = '00�04.066';%405';             % latitude [�']
-mooring.lon      = '129�12.41';%247';           % longitude [�']
-clock_drift      = 0;                  % [seconds]
+cruise.name      = 'PIRATA-FR30';           % cruise name
+mooring.name     = '0N0W';                  % '0N10W'
+mooring.lat      = '00°00.287';%405';             % latitude [°']
+mooring.lon      = '000°04.07';%247';           % longitude [°']
+clock_drift      = 276;                  % [seconds]
 
 % ADCP info
-adcp.sn          = 13952;                   % ADCP serial number
-adcp.type        = '75 khz Quartermaster'; % Type : Quartermaster, longranger
+adcp.sn          = 8237;                   % ADCP serial number
+adcp.type        = '150 khz Quartermaster'; % Type : Quartermaster, longranger
 adcp.direction   = 'up';                    % upward-looking 'up', downward-looking 'dn'
-adcp.instr_depth = 600;                     % nominal instrument depth
-instr            = 2;                       % this is just for name convention and sorting of all mooring instruments
+adcp.instr_depth = 300;                     % nominal instrument depth
+instr            = 1;                       % this is just for name convention and sorting of all mooring instruments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Convert variables
-latDegInd               = strfind(mooring.lat,'�');
-lonDegInd               = strfind(mooring.lon,'�');
+latDegInd               = strfind(mooring.lat,'°');
+lonDegInd               = strfind(mooring.lon,'°');
 mooring.lat             = str2double(mooring.lat(1:latDegInd-1))+str2double(mooring.lat(latDegInd+1:end-1))/60;
 mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))+str2double(mooring.lon(lonDegInd+1:end-1))/60;
 clock_drift             = clock_drift/3600;  % convert into hrs
@@ -75,7 +75,7 @@ grid on;
 subplot(2,1,2)
 plot(raw.temperature);
 title('Temperature sensor');
-ylabel('Temperature [°C]');
+ylabel('Temperature [cond1C]');
 xlabel('Time index');
 grid on;
 saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Pressure_Temp_sensor'],'fig')
@@ -158,7 +158,7 @@ hold on
 plot(10*ones(1,length(ang(:,1))),'--r');
 hold off
 title('Attitude sensor');
-ylabel('Pitch [°]');
+ylabel('Pitch [cond1]');
 xlabel('Time index');
 axis([0 length(ang(:,1)) 0 20])
 grid on;
@@ -168,13 +168,13 @@ plot(abs(ang(:,2)));
 hold on
 plot(10*ones(1,length(ang(:,1))),'--r');
 hold off
-ylabel('Roll [°]');
+ylabel('Roll [cond1]');
 xlabel('Time index');
 axis([0 length(ang(:,1)) 0 20])
 grid on;
 saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Attitude'],'fig')
 disp('****')
-disp('Delete high attitude ADCP data (>=10�)');
+disp('Delete high attitude ADCP data (>=10°)');
 
 high_pitch = find(abs(ang(:,1))>=10);
 high_roll  = find(abs(ang(:,2))>=10);
@@ -493,7 +493,7 @@ h=colorbar;
 ylabel(h,'U [m s^-^1]');
 set(gca,'ydir', 'reverse');
 ylabel('Depth (m)');
-ylim([0,round(max(max(z,adcp.instr_depth)))]);
+ylim([0,round(max(max(z)))]);
 %change figure label in HH:MM
 gregtick;
 if filt
@@ -511,7 +511,7 @@ h     = colorbar;
 ylabel(h,'V [m s^-^1]');
 set(gca,'ydir', 'reverse');
 ylabel('Depth (m)');
-ylim([0,round(max(max(z,adcp.instr_depth)))]);
+ylim([0,round(max(max(z)))]);
 %change figure label in HH:MM
 gregtick;
 if filt
