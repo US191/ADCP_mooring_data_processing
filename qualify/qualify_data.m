@@ -8,18 +8,28 @@ addpath(genpath('moored_adcp_proc'))
 addpath(genpath('tools'))
 
 %% Load Mooring data
-lat_moor  = 0.0025;
-lon_moor  = -9.8858;
-Moorfile  = '/FR29/0N10W_15258_instr_01.mat';
-Moorfile2 = '/FR29/0N10W_15258_instr_01.mat';
-%Moorfile  = 'C:\Users\proussel\Documents\outils\ADCP\ADCP_mooring_data_processing\FR29\0N10W_15258_instr_01_int_filt_sub.mat';
+lat_moor  = 0.002;
+lon_moor  = -0.067;
+Moorfile  = '../FR30/0N0W_8237_instr_01.mat';
+Moorfile2 = '../FR30/0N0W_8237_instr_01_int_filt_sub.mat';
+%Moorfile  = 'C:\Users\proussel\Documents\outils\ADCP\ADCP_mooring_data_processing\FR30\0N10W_15258_instr_01_int_filt_sub.mat';
 
-%FR29
-OS38file  = '/media/irdcampagnes/PIRATA/PIRATA-FR29/data-final/SADCP/OS38/data/LTA/PIRATA-FR29-OS38_LTA_osite_fhv1_final.nc';
-OS150file = '/media/irdcampagnes/PIRATA/PIRATA-FR29/data-final/SADCP/OS150/data/LTA/PIRATA-FR29-OS150_LTA_osite_fhv1_final.nc';
-DVLfile   = '/media/irdcampagnes/PIRATA/PIRATA-FR29/data-final/SADCP/DVL600/data/LTA/PIRATA-FR29-DVL600_LTA_osite_fhv1_final.nc';
-LADCPfil1 = '/media/irdcampagnes/PIRATA/PIRATA-FR29/data-adjusted/LADCP/profiles/FR29_00003.mat';
-LADCPfil2 = '/media/irdcampagnes/PIRATA/PIRATA-FR29/data-adjusted/LADCP/profiles/FR29_00045.mat';
+%FR30
+OS38file  = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/OS38/ncc/FR30-OS38_osite_mat20_fhv1_corr_final.nc';
+OS150file = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/OS150/ncc/FR30-OS150_osite_mat20_fhv1_corr_final.nc';
+DVLfile   = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/LOCH/ncc/FR30-DVL600_osite_mat20_fhv1_corr_final.nc';
+OS38file  = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/OS38/ncc/FR30-OS38_osite_mat20_corr.nc';
+OS150file = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/OS150/ncc/FR30-OS150_osite_mat20_corr.nc';
+DVLfile   = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/LOCH/ncc/FR30-DVL600_osite_mat20_corr.nc';
+LADCPfil1 = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-processing/LADCP/process/profiles/FR30_007.mat';
+LADCPfil2 = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-processing/LADCP/process/profiles/FR30_014.mat';
+
+%FR28
+% OS38file  = '/media/irdcampagnes/PIRATA/PIRATA-FR28/data-final/SADCP/OS38/data/LTA/PIRATA-FR28_osite_fhv1.nc';
+% OS150file = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/OS150/ncc/FR30-OS150_osite_mat20_fhv1_corr_final.nc';
+% DVLfile   = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/LOCH/ncc/FR30-DVL600_osite_mat20_fhv1_corr_final.nc';
+% LADCPfil1 = '/media/irdcampagnes/PIRATA/PIRATA-FR28/data-adjusted/LADCP/profiles/FR28_00011.mat';
+% LADCPfil2 = '/media/irdcampagnes/PIRATA/PIRATA-FR28/data-adjusted/LADCP/profiles/FR28_00014.mat';
 
 % %FR27
 % OS38file  = '/media/irdbrest_ftp/pirata/pirata-data/adcp/sadcp_cascade/PIRATAFR27/38kHz/fr27_fhv1_38kHz.nc';
@@ -49,10 +59,10 @@ else
 end
 
 load(Moorfile2)
-u_mooring2     = data.u;
-v_mooring2     = data.v;
-t_mooring2     = data.time;
-z_mooring2     = data.z_bins;
+u_mooring2     = data.uintfilt;
+v_mooring2     = data.vintfilt;
+t_mooring2     = data.inttim;
+z_mooring2     = data.Z;
     
 %% Load DVL Data
 dvl.u    = ncread(DVLfile, 'UVEL_ADCP');
@@ -84,9 +94,11 @@ load(LADCPfil1)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Research Date - reference LADCP
 h_mooring     = datenum(julian(t_mooring(:)));
+h_mooring2    = datenum(julian(t_mooring2(:)));
 
 h_ladcp       = datenum(dr.date);
 [~,plt_m]     = min(abs((h_mooring)-h_ladcp));
+[~,plt_m2]    = min(abs((h_mooring2)-h_ladcp));
 
 h_os          = os.t + datenum('1950-01-01');
 [~,plt_os]    = min(abs((h_os)-h_ladcp));
@@ -102,7 +114,7 @@ if contains(Moorfile, 'int_filt')
 else
     z_mooring_ext = z_mooring(:, plt_m);
 end
-z_mooring_ext2 = z_mooring2(:, plt_m);
+z_mooring_ext2 = z_mooring2;
 
 %% Calc distance
 d_station     = dist(lat_moor,lon_moor,dr.lat,dr.lon);
@@ -118,11 +130,11 @@ plot(dr.u, -dr.z, '--g')
 hold on; 
 plot(os.u(:,plt_os), os.d,'r')
 plot(os38.u(:,plt_os38), os38.d,'c')
-if contains(LADCPfil1, 'FR29')
+if contains(LADCPfil1, 'FR30')
     plot(dvl.u(:,plt_dvl), dvl.d,'k')
 end
 plot(u_mooring(:,plt_m), -z_mooring_ext,'LineWidth',2,'Color','b')
-plot(u_mooring2(:,plt_m), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
+plot(u_mooring2(:,plt_m2), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
 
 hold off
 xlabel('U [m.s^{-1}]')
@@ -134,16 +146,17 @@ date_os    = (h_os(plt_os)-h_mooring(plt_m))*(24*60);
 date_os38  = (h_os38(plt_os38)-h_mooring(plt_m))*(24*60);
 date_ladcp = (h_ladcp-h_mooring(plt_m))*(24*60);
 if date_os<0
-    if contains(LADCPfil1, 'FR29')
-        legend(['LADCP / ' num2str(round(date_ladcp)) 'min'], ['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['DVL / ' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+    if contains(LADCPfil1, 'FR30')
+        legend(['LADCP / ' num2str(round(date_ladcp)) 'min'], ['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['DVL / ' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered','location', 'southeast')
     else
-        legend(['LADCP / ' num2str(round(date_ladcp)) 'min'], ['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+        legend(['LADCP / ' num2str(round(date_ladcp)) 'min'], ['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered', 'location', 'southeast')
     end    
 else
-    if contains(LADCPfil1, 'FR29')
-        legend(['LADCP / +' num2str(round(date_ladcp)) 'min'], ['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['DVL / +' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+    if contains(LADCPfil1, 'FR30')
+        legend(['LADCP / +' num2str(round(date_ladcp)) 'min'], ['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['DVL / +' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))],'ADCP filtered', 'location', 'southeast')
     else
-        legend(['LADCP / +' num2str(round(date_ladcp)) 'min'], ['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+        legend(['LADCP / +' num2str(round(date_ladcp)) 'min'], ['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered','location', 'southeast')
+        legend(['LADCP / ' num2str(round(date_ladcp)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered', 'location', 'southeast') 
     end
 end
 title(['ADCP Mooring measurement vs other current measurement sources [distance = ' num2str(round(d_station*10)/10) 'NM]'])
@@ -153,11 +166,11 @@ plot(dr.v, -dr.z, '--g')
 hold on; 
 plot(os.v(:,plt_os), os.d,'r')
 plot(os38.v(:,plt_os38), os38.d,'c')
-if contains(LADCPfil1, 'FR29')
+if contains(LADCPfil1, 'FR30')
     plot(dvl.v(:,plt_dvl), dvl.d,'k')
 end
 plot(v_mooring(:,plt_m), -z_mooring_ext,'LineWidth',2,'Color','b')
-plot(v_mooring2(:,plt_m), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
+plot(v_mooring2(:,plt_m2), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
 hold off
 xlabel('V [m.s^{-1}]')
 ylabel('Depth [m]')
@@ -172,6 +185,7 @@ load(LADCPfil2)
 %% Research Date
 h_ladcp     = datenum(dr.date);
 [~,plt_m]   = min(abs((h_mooring)-h_ladcp));
+[~,plt_m2]  = min(abs((h_mooring2)-h_ladcp));
 
 [~,plt_os]  = min(abs((h_os)-h_ladcp));
 
@@ -196,36 +210,37 @@ plot(dr.u, -dr.z, '--g')
 hold on; 
 plot(os.u(:,plt_os), os.d,'r')
 plot(os38.u(:,plt_os38), os38.d,'c')
-if contains(LADCPfil1, 'FR29')
+if contains(LADCPfil1, 'FR30')
     plot(dvl.u(:,plt_dvl), dvl.d,'k')
 end
 plot(u_mooring(:,plt_m), -z_mooring_ext,'LineWidth',2,'Color','b')   %data.Z(:,plt_m)
-plot(u_mooring2(:,plt_m), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
+plot(u_mooring2(:,plt_m2), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
 hold off
 xlabel('U [m.s^{-1}]')
 ylabel('Depth [m]')
 grid on
 ylim([-300 0])
-if contains(LADCPfil1, 'FR29')
-    legend(['LADCP / ' datestr(h_ladcp)], ['OS150 / ' datestr(h_os(plt_os))], ['OS38 / ' datestr(h_os38(plt_os38))], ['DVL / ' datestr(h_dvl(plt_dvl))], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+if contains(LADCPfil1, 'FR30')
+    legend(['LADCP / ' datestr(h_ladcp)], ['OS150 / ' datestr(h_os(plt_os))], ['OS38 / ' datestr(h_os38(plt_os38))], ['DVL / ' datestr(h_dvl(plt_dvl))], ['ADCP Mooring / ' datestr(h_mooring(plt_m))],'ADCP filtered','location', 'southeast')
 else
-    legend(['LADCP / ' datestr(h_ladcp)], ['OS150 / ' datestr(h_os(plt_os))], ['OS38 / ' datestr(h_os38(plt_os38))], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')    
+    legend(['LADCP / ' datestr(h_ladcp)], ['OS150 / ' datestr(h_os(plt_os))], ['OS38 / ' datestr(h_os38(plt_os38))], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered','location', 'southeast')    
 end 
 date_dvl   = (h_dvl(plt_dvl)-h_mooring(plt_m))*(24*60);
 date_os    = (h_os(plt_os)-h_mooring(plt_m))*(24*60);
 date_os38  = (h_os38(plt_os38)-h_mooring(plt_m))*(24*60);
 date_ladcp = (h_ladcp-h_mooring(plt_m))*(24*60);
 if date_os<0
-    if contains(LADCPfil1, 'FR29')
-        legend(['LADCP / ' num2str(round(date_ladcp)) 'min'], ['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['DVL / ' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+    if contains(LADCPfil1, 'FR30')
+        legend(['LADCP / ' num2str(round(date_ladcp)) 'min'], ['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['DVL / ' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered','location', 'southeast')
     else
-        legend(['LADCP / ' num2str(round(date_ladcp)) 'min'], ['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+        legend(['LADCP / ' num2str(round(date_ladcp)) 'min'], ['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered','location', 'southeast')
     end    
 else
-    if contains(LADCPfil1, 'FR29')
-        legend(['LADCP / +' num2str(round(date_ladcp)) 'min'], ['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['DVL / +' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+    if contains(LADCPfil1, 'FR30')
+        legend(['LADCP / +' num2str(round(date_ladcp)) 'min'], ['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['DVL / +' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))],'ADCP filtered','location', 'southeast')
     else
-        legend(['LADCP / +' num2str(round(date_ladcp)) 'min'], ['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+        legend(['LADCP / +' num2str(round(date_ladcp)) 'min'], ['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered','location', 'southeast')
+        legend(['LADCP / ' num2str(round(date_ladcp)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))],'ADCP filtered', 'location', 'southeast') 
     end
 end
 title(['ADCP Mooring measurement vs other current measurement sources [distance = ' num2str(round(d_station*10)/10) 'NM]'])
@@ -235,11 +250,11 @@ plot(dr.v, -dr.z, '--g')
 hold on; 
 plot(os.v(:,plt_os), os.d,'r')
 plot(os38.v(:,plt_os38), os38.d,'c')
-if contains(LADCPfil1, 'FR29')
+if contains(LADCPfil1, 'FR30')
     plot(dvl.v(:,plt_dvl), dvl.d,'k')
 end
 plot(v_mooring(:,plt_m), -z_mooring_ext,'LineWidth',2,'Color','b')
-plot(v_mooring2(:,plt_m), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
+plot(v_mooring2(:,plt_m2), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
 hold off
 xlabel('V [m.s^{-1}]')
 ylabel('Depth [m]')
@@ -259,6 +274,7 @@ d_dvl           = dist(lat_moor,lon_moor,dvl.lat,dvl.lon);
 [~,plt_dvl]     = min(d_dvl);
 
 [~,plt_m]       = min(abs(h_os38(plt_os38)-h_mooring));
+[~,plt_m2]       = min(abs(h_os38(plt_os38)-h_mooring2));
 %plt_m = plt_m-3;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% En dur
 % plt_os38 = plt_os38 -20;
@@ -280,11 +296,11 @@ subplot(1,2,1)
 hold on; 
 plot(os.u(:,plt_os), os.d,'r')
 plot(os38.u(:,plt_os38), os38.d,'c')
-if contains(LADCPfil1, 'FR29')
+if contains(LADCPfil1, 'FR30')
     plot(dvl.u(:,plt_dvl), dvl.d,'k')
 end
 plot(u_mooring(:,plt_m), -z_mooring_ext,'LineWidth',2,'Color','b')
-plot(u_mooring2(:,plt_m), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
+plot(u_mooring2(:,plt_m2), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
 hold off
 xlabel('U [m.s^{-1}]')
 ylabel('Depth [m]')
@@ -294,16 +310,18 @@ date_dvl  = (h_dvl(plt_dvl)-h_mooring(plt_m))*(24*60);
 date_os   = (h_os(plt_os)-h_mooring(plt_m))*(24*60);
 date_os38 = (h_os38(plt_os38)-h_mooring(plt_m))*(24*60);
 if date_os<0
-    if contains(LADCPfil1, 'FR29')
-        legend(['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['DVL / ' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+    if contains(LADCPfil1, 'FR30')
+        legend(['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['DVL / ' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered','location', 'southeast')
     else
-        legend(['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+        legend(['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered','location', 'southeast')
     end    
 else
-    if contains(LADCPfil1, 'FR29')
-        legend(['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['DVL / +' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+    if contains(LADCPfil1, 'FR30')
+        legend(['OS150 / +' num2str(round(date_os)) 'min'],['OS38 / +' num2str(round(date_os38)) 'min'], ['DVL / +' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered','location', 'southeast')
     else
-        legend(['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP Mooring filtered', 'location', 'southeast')
+        legend(['OS150 / +' num2str(round(date_os)) 'min'], ['OS38 / +' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))],'ADCP filtered', 'location', 'southeast')
+        legend(['OS38 / ' num2str(round(date_os38)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))],'ADCP filtered', 'location', 'southeast') 
+
     end
 end
 title(['ADCP Mooring measurement vs other current measurement sources [distance = ' num2str(round(d_mo*10)/10) 'NM]'])
@@ -312,11 +330,11 @@ subplot(1,2,2)
 hold on; 
 plot(os.v(:,plt_os), os.d,'r')
 plot(os38.v(:,plt_os38), os38.d,'c')
-if contains(LADCPfil1, 'FR29')
+if contains(LADCPfil1, 'FR30')
     plot(dvl.v(:,plt_dvl), dvl.d,'k')
 end
 plot(v_mooring(:,plt_m), -z_mooring_ext,'LineWidth',2,'Color','b')
-plot(v_mooring2(:,plt_m), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
+plot(v_mooring2(:,plt_m2), -z_mooring_ext2,'--','LineWidth',1.5,'Color','b')
 hold off
 xlabel('V [m.s^{-1}]')
 ylabel('Depth [m]')
