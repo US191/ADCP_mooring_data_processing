@@ -1,37 +1,41 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % template_get_adcp_data.m
 % -------------------------------
-% Author : Jeremie HABASQUE / Pierre Rousselot - IRD
+% Author : Pierre ROUSSELOT - IRD (pierre.rousselot@ird.fr)
+%          Jeremie HABASQUE - IRD (jeremie.habasque@ird.fr)  
 % -------------------------------
 % INPUTS:
 % - binary raw file with .000 extension
 % OUTPUTS:
 % - U and V fields interpolated on a regulard grid, filtered and subsampled
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 close all; clear
 addpath(genpath('../ADCP_mooring_data_processing'));
 addpath('/home/proussel/Documents/OUTILS/TOOLS/nansuite'); % NaNSuitePath
 
-% First part --------------------------------------------------------------------------------------------------------------------
 %% META information:
 % Location rawfile
 rawfile          = '/home/proussel/Bureau/piratafr30/MOUILLAGE_ADCP/FR28_000.000';        % binary file with .000 extension
-fpath_output     = './FR30/';               % Output directory
+fpath_output     = './FR30/';                                                             % Output directory
 
 % Cruise/mooring info
-cruise.name      = 'PIRATA-FR30';           % cruise name
-mooring.name     = '0N0W';                  % '0N10W'
-mooring.lat      = '00°00.287';%405';             % latitude [°']
-mooring.lon      = '000°04.07';%247';           % longitude [°']
-clock_drift      = 276;                  % [seconds]
+cruise.name      = 'PIRATA-FR30';                                                         % cruise name
+mooring.name     = '0N0W';                                                                % '0N10W'
+mooring.lat      = '00°00.287';                                                           % latitude [°']
+mooring.lon      = '000°04.07';                                                           % longitude [°']
+clock_drift      = 276;                                                                   % [seconds]
 
 % ADCP info
-adcp.sn          = 8237;                   % ADCP serial number
-adcp.type        = '150 khz Quartermaster'; % Type : Quartermaster, longranger
-adcp.direction   = 'up';                    % upward-looking 'up', downward-looking 'dn'
-adcp.instr_depth = 300;                     % nominal instrument depth
-instr            = 1;                       % this is just for name convention and sorting of all mooring instruments
+adcp.sn          = 8237;                                                                  % ADCP serial number
+adcp.type        = '150 khz Quartermaster';                                               % Type : Quartermaster, longranger
+adcp.direction   = 'up';                                                                  % upward-looking 'up', downward-looking 'dn'
+adcp.instr_depth = 300;                                                                   % nominal instrument depth
+instr            = 1;                                                                     % this is just for name convention and sorting of all mooring instruments
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% Convert variables
 latDegInd               = strfind(mooring.lat,'°');
 lonDegInd               = strfind(mooring.lon,'°');
@@ -93,7 +97,7 @@ freq                = raw.config.sysconfig.frequency;
 u2                  = squeeze(raw.vel(:,1,first:last));
 v2                  = squeeze(raw.vel(:,2,first:last));
 w                   = squeeze(raw.vel(:,3,first:last));
-vel_err             = squeeze(raw.vel(:,4,first:last));  % the difference in vertical velocity between the two pairs of transducers
+vel_err             = squeeze(raw.vel(:,4,first:last)); 
 corr                = squeeze(mean(raw.cor(:,4,first:last),2));
 ea                  = squeeze(mean(raw.amp(:,:,first:last),2));
 pg                  = squeeze(raw.pg(:,4,first:last));
