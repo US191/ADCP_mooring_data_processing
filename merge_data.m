@@ -5,14 +5,15 @@
 clear all; close all;
 
 %% Variables
-FileToMerge1     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/FR28/ADCP_0N0W_2016_2018_1d.nc'; %.nc file to merge with
-FileToMerge2     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/FR30/ADCP_0N0W_2018_2020_1d.nc'; %.nc file to merge
+FileToMerge1     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX2/ADCP_0N130E_2010_2010_1d.nc'; %.nc file to merge with
+FileToMerge2     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2016_1d.nc'; %.nc file to merge
+FileToMerge3     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX2/ADCP_0N130E_2010_2012_1d.nc'; %.nc file to merge
 % FileToMerge1     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2013_1d.nc'; %.nc file to merge with
 % FileToMerge2     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2016_1d.nc'; %.nc file to merge
 step_subsampling = 1; % 1=daily
-plot_data        = 0;
-mooring.name     = '0N0E';
-freq             = '150';
+plot_data        = 1;
+mooring.name     = '0N130E';
+freq             = '75';
 % mooring.name     = '0N130E';
 % freq             = '75';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,13 +28,19 @@ ncfile2.time  = ncread(FileToMerge2,'time');
 ncfile2.depth = ncread(FileToMerge2,'depth');
 ncfile2.u     = ncread(FileToMerge2,'u');
 ncfile2.v     = ncread(FileToMerge2,'v');
+
+%% Read third .nc file
+ncfile3.time  = ncread(FileToMerge3,'time');
+ncfile3.depth = ncread(FileToMerge3,'depth');
+ncfile3.u     = ncread(FileToMerge3,'u');
+ncfile3.v     = ncread(FileToMerge3,'v');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Create depth matrix
 depth = max(vertcat(ncfile1.depth,ncfile2.depth)):ncfile1.depth(2)-ncfile1.depth(1):min(vertcat(ncfile1.depth,ncfile2.depth));
 depth = fliplr(depth);
 
 %% Create time matrix
-time  = vertcat(ncfile1.time,ncfile2.time);
+time  = vertcat(ncfile1.time,ncfile3.time,ncfile2.time);
 time  = time*ones(1,length(depth));
 
 %% Create u/v matrix
@@ -45,8 +52,12 @@ for ii = 1:length(ncfile2.time)
     u2(ii,:) = interp1(ncfile2.depth,ncfile2.u(ii,:),depth);
     v2(ii,:) = interp1(ncfile2.depth,ncfile2.v(ii,:),depth);
 end
-u     = vertcat(u1,u2);
-v     = vertcat(v1,v2);
+for ii = 1:length(ncfile3.time)
+    u3(ii,:) = interp1(ncfile3.depth,ncfile3.u(ii,:),depth);
+    v3(ii,:) = interp1(ncfile3.depth,ncfile3.v(ii,:),depth);
+end
+u     = vertcat(u1,u3,u2);
+v     = vertcat(v1,v3,v2);
 
 %% Plot data
 if plot_data
@@ -106,7 +117,7 @@ yr_end   = datestr(time(end)+datenum(1950,01,01), 'yyyy');
 ncid     = netcdf.create(['ADCP_',mooring.name,'_',num2str(yr_start),'_',num2str(yr_end),'.nc'],'NC_CLOBBER');
 
 %create dimension
-dimidz   = netcdf.defDim(ncid, 'DEPTH', length(depth));
+dimidz   = netcdf.defDim(ncid, 'DEPTH', size(depth,2));
 dimidt   = netcdf.defDim(ncid, 'TIME', netcdf.getConstant('NC_UNLIMITED'));
 %Define IDs for the dimension variables (pressure,time,latitude,...)
 time_ID  = netcdf.defVar(ncid,'TIME','double',dimidt);
@@ -128,7 +139,7 @@ netcdf.putAtt(ncid, v_ID, 'long_name', 'Meridional velocities');
 %We are done defining the NetCdf
 netcdf.endDef(ncid);
 %Then store the dimension variables in
-netcdf.putVar(ncid, depth_ID, depth);
+netcdf.putVar(ncid, depth_ID, depth(1,:));
 netcdf.putVar(ncid, time_ID, 0, length(time), time);
 %Then store my main variable
 netcdf.putVar(ncid, u_ID, u');

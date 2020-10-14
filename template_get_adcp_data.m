@@ -16,21 +16,21 @@ addpath('/home/proussel/Documents/OUTILS/TOOLS/nansuite'); % NaNSuitePath
 
 %% META information:
 % Location rawfile
-rawfile          = '/home/proussel/Bureau/piratafr30/MOUILLAGE_ADCP/FR28_000.000';        % binary file with .000 extension
-fpath_output     = './FR30/';                                                             % Output directory
+rawfile          = 'IDMX2/_RDI_000.000';        % binary file with .000 extension
+fpath_output     = './IDMX2/';                                                             % Output directory
 
 % Cruise/mooring info
-cruise.name      = 'PIRATA-FR30';                                                         % cruise name
-mooring.name     = '0N0W';                                                                % '0N10W'
-mooring.lat      = '00°00.287';                                                           % latitude [°']
-mooring.lon      = '000°04.07';                                                           % longitude [°']
-clock_drift      = 276;                                                                   % [seconds]
+cruise.name      = 'INDOMIX';                                                         % cruise name
+mooring.name     = '0N130E';                                                                % '0N10W'
+mooring.lat      = '00°04.066';                                                           % latitude [°']
+mooring.lon      = '129°12.41';                                                           % longitude [°']
+clock_drift      = 0;                                                                   % [seconds]
 
 % ADCP info
-adcp.sn          = 8237;                                                                  % ADCP serial number
-adcp.type        = '150 khz Quartermaster';                                               % Type : Quartermaster, longranger
+adcp.sn          = 13952;                                                                  % ADCP serial number
+adcp.type        = '75 khz Quartermaster';                                               % Type : Quartermaster, longranger
 adcp.direction   = 'up';                                                                  % upward-looking 'up', downward-looking 'dn'
-adcp.instr_depth = 300;                                                                   % nominal instrument depth
+adcp.instr_depth = 632;                                                                   % nominal instrument depth
 instr            = 1;                                                                     % this is just for name convention and sorting of all mooring instruments
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,9 +121,9 @@ EA0                 = round(mean(ea(nbin,:)));
 
 %% Calculate Magnetic deviation values
 [a,~]                   = gregorian(raw.juliandate(1));
-magnetic_deviation_ini  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(1)-julian(a,1,1,0,0,0))/365.25);
+magnetic_deviation_ini  = -magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(1)-julian(a,1,1,0,0,0))/365.25);
 [a,~]                   = gregorian(raw.juliandate(end));
-magnetic_deviation_end  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(end)-julian(a,1,1,0,0,0))/365.25);
+magnetic_deviation_end  = -magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(end)-julian(a,1,1,0,0,0))/365.25);
 rot                     = (magnetic_deviation_ini+magnetic_deviation_end)/2;
 mag_dev                 = linspace(magnetic_deviation_ini, magnetic_deviation_end, length(time0));
 mag_dev                 = mag_dev(first:last);
@@ -131,9 +131,23 @@ mag_dev                 = mag_dev(first:last);
 %% Correction of magnetic deviation
 disp('****')
 disp('Correct magnetic deviation')
+% for ii = 1 : length(mag_dev)
+%     [u(:,ii),v(:,ii)] = uvrot(u2(:,ii), v2(:,ii), -mag_dev(ii));
+% end
+mag_dev = -mag_dev * pi/180;
 for ii = 1 : length(mag_dev)
-    [u(:,ii),v(:,ii)] = uvrot(u2(:,ii), v2(:,ii), -mag_dev(ii));
+    M(1,1) = cos(mag_dev(ii));
+    M(1,2) = -sin(mag_dev(ii));
+    M(2,1) = sin(mag_dev(ii));
+    M(2,2) = cos(mag_dev(ii));
+    vvel(1,:) = u2(:,ii);
+    vvel(2,:) = v2(:,ii);
+    vvvel = M * vvel;
+    u(:,ii) = vvvel(1,:);
+    v(:,ii) = vvvel(2,:);
 end
+
+
 
 %% Correct percent good: Exclude data with percent good below prct_good
 figure;
@@ -279,6 +293,21 @@ else
         offset           = 0;
     end
     
+    binmat              = repmat((1:nbin)',1,length(dpt1));
+    
+    if strcmp(adcp.direction,'up')
+        z(1,:) = dpt1(1,:)-(tlen+blen+lag)*0.5-blnk;
+        for ii = 2:length(binmat(:,1))
+            z(ii,:) = z(1,:)-(binmat(ii,:)-1.5)*blen;
+        end
+    elseif strcmp(adcp.direction,'dn')
+        z(1,:) = dpt1(1,:)+(tlen+blen+lag)*0.5+blnk;
+        for ii = 2:length(binmat(:,1))
+            z(ii,:) = z(1,:)+(binmat(ii,:)-1.5)*blen;
+        end
+    else
+        error('Bin depth calculation: unknown direction!');
+    end
     
 end
 
