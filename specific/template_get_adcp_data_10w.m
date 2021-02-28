@@ -16,7 +16,7 @@ addpath('/home/proussel/Documents/OUTILS/TOOLS/nansuite'); % NaNSuitePath
 
 %% META information:
 % Location rawfile
-rawfile          = '_RDI_000.000';        % binary file with .000 extension
+rawfile          = 'FR10W000.000';        % binary file with .000 extension
 fpath_output     = './10W/';                                                             % Output directory
 
 % Cruise/mooring info
@@ -27,10 +27,10 @@ mooring.lon      = '-10°00.000';                                               
 clock_drift      = 0;                                                                   % [seconds]
 
 % ADCP info
-adcp.sn          = 509;                                                                  % ADCP serial number
-adcp.type        = '150 khz Quartermaster';                                               % Type : Quartermaster, longranger
+adcp.sn          = 508;                                                                  % ADCP serial number
+adcp.type        = '300 khz Quartermaster';                                               % Type : Quartermaster, longranger
 adcp.direction   = 'up';                                                                  % upward-looking 'up', downward-looking 'dn'
-adcp.instr_depth = 300;                                                                   % nominal instrument depth
+adcp.instr_depth = 150;                                                                   % nominal instrument depth
 instr            = 1;                                                                     % this is just for name convention and sorting of all mooring instruments
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,21 +46,22 @@ clock_drift             = clock_drift/3600;  % convert into hrs
 %% Read rawfile
 disp('****')
 raw_file                = [fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '_raw.mat'];
-if exist(raw_file)
-    fprintf('Read %s\n', raw_file);
-    load(raw_file)
-else
-    fprintf('Read %s\n', rawfile);
-    raw                 = read_os3(rawfile,'all');
-    save(raw_file,'raw','-v7.3');
-end
+% if exist(raw_file)
+%     fprintf('Read %s\n', raw_file);
+%     load(raw_file)
+% else
+%     fprintf('Read %s\n', rawfile);
+%     raw                 = read_os3(rawfile,'all');
+%     save(raw_file,'raw','-v7.3');
+% end
+load('FR22-UP-508.mat')
 
 %% Correct clock drift
-time0                   = julian(raw.juliandate);
-clockd                  = linspace(0, clock_drift, length(time0));
-raw.juliandate          = raw.juliandate - clockd / 24;
-disp('****')
-disp('Correct clock drift')
+% time0                   = julian(raw.juliandate);
+% clockd                  = linspace(0, clock_drift, length(time0));
+% raw.juliandate          = raw.juliandate - clockd / 24;
+% disp('****')
+% disp('Correct clock drift')
 
 %% Plot pressure and temperature sensor
 figure;
@@ -94,14 +95,25 @@ last                = input('Determine last indice when instrument was at depth 
 
 %% Extract data
 freq                = raw.config.sysconfig.frequency;
-u2                  = squeeze(raw.vel(:,1,first:last));
-v2                  = squeeze(raw.vel(:,2,first:last));
-w                   = squeeze(raw.vel(:,3,first:last));
-vel_err             = squeeze(raw.vel(:,4,first:last)); 
-corr                = squeeze(mean(raw.cor(:,4,first:last),2));
-ea                  = squeeze(mean(raw.amp(:,:,first:last),2));
-pg                  = squeeze(raw.pg(:,4,first:last));
-time                = raw.juliandate(first:last);
+
+u2 = SerEmmpersec(first:last,:)'./1000; u2(u2<-30)=NaN;
+v2 = SerNmmpersec(first:last,:)'./1000; v2(v2<-30)=NaN;
+vel_err = SerErmmpersec(first:last,:)'./1000; vel_err(vel_err<-30)=NaN;
+pg=SerPG4(first:last,:)';   
+
+% u2                  = squeeze(raw.vel(:,1,first:last));
+% v2                  = squeeze(raw.vel(:,2,first:last));
+% w                   = squeeze(raw.vel(:,3,first:last));
+% vel_err             = squeeze(raw.vel(:,4,first:last)); 
+corr                  = squeeze(SerC4cnt(first:last,:)');
+
+test(:,1,:) = SerEA1cnt'; test(:,2,:) = SerEA2cnt'; test(:,3,:) = SerEA3cnt'; test(:,4,:) = SerEA4cnt';
+
+ea                  = squeeze(mean(test(:,4,first:last),2));
+%pg                  = squeeze(raw.pg(:,4,first:last));
+%time                = raw.juliandate(first:last);
+time = julian(SerYear(first:last)+2000,SerMon(first:last),SerDay(first:last),SerHour(first:last));
+time=time(1)+datenum(0,0,0,1,0,0).*[0:length(depth)-1]';
 ang                 = [raw.pitch(first:last) raw.roll(first:last) raw.heading(first:last)];
 soundspeed          = raw.soundspeed(first:last);
 temp                = raw.temperature(first:last);
@@ -121,12 +133,12 @@ EA0                 = round(mean(ea(nbin,:)));
 
 %% Calculate Magnetic deviation values
 [a,~]                   = gregorian(raw.juliandate(1));
-magnetic_deviation_ini  = -magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(1)-julian(a,1,1,0,0,0))/365.25);
+magnetic_deviation_ini  = -magdev(mooring.lat,mooring.lon,0,a+(time(1)-julian(a,1,1,0,0,0))/365.25);
 [a,~]                   = gregorian(raw.juliandate(end));
-magnetic_deviation_end  = -magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(end)-julian(a,1,1,0,0,0))/365.25);
+magnetic_deviation_end  = -magdev(mooring.lat,mooring.lon,0,a+(time(end)-julian(a,1,1,0,0,0))/365.25);
 rot                     = (magnetic_deviation_ini+magnetic_deviation_end)/2;
-mag_dev                 = linspace(magnetic_deviation_ini, magnetic_deviation_end, length(time0));
-mag_dev                 = mag_dev(first:last);
+mag_dev                 = linspace(magnetic_deviation_ini, magnetic_deviation_end, length(time));
+%mag_dev                 = mag_dev(first:last);
 
 %% Correction of magnetic deviation
 disp('****')
@@ -428,45 +440,23 @@ disp('Saving raw data')
 save([fpath_output, mooring.name '_' num2str(adcp.sn) '_instr_' sprintf('%02d',instr) '.mat'],'adcp','mooring','data','-v7.3');
 
 %% Interpolate data on a regular vertical grid
-if strcmp(adcp.direction,'up')
-    Z                   = fliplr(blen/2:blen:max(z(:))+blen);
-    Zmax                = max(Z);
-    u_interp            = NaN(length(time),length(Z));
-    v_interp            = NaN(length(time),length(Z));
+Z                   = fliplr(blen/2:blen:max(z(:))+blen);
+Zmax                = max(Z);
+u_interp            = NaN(length(time),length(Z));
+v_interp            = NaN(length(time),length(Z));
+if reply_ts == 1
+    ts_interp       = NaN(length(time),length(Z));
+end
+
+for i=1:length(time)
+    % indice correspondant sur la grille finale Z
+    ind = round((Zmax-z(1,i))/blen)+1;
+    % filling the grid
+    npts = min([length(Z)+ind+1 length(bin)]);
+    u_interp(i,ind:ind+npts-1) = u1(1:npts,i);
+    v_interp(i,ind:ind+npts-1) = v1(1:npts,i);
     if reply_ts == 1
-        ts_interp       = NaN(length(time),length(Z));
-    end
-    
-    for i=1:length(time)
-        % indice correspondant sur la grille finale Z
-        ind = round((Zmax-z(1,i))/blen)+1;
-        % filling the grid
-        npts = min([length(Z)+ind+1 length(bin)]);
-        u_interp(i,ind:ind+npts-1) = u1(1:npts,i);
-        v_interp(i,ind:ind+npts-1) = v1(1:npts,i);
-        if reply_ts == 1
-            ts_interp(i,ind:ind+npts-1) = data.ts.ts(1:npts,i);
-        end
-    end
-else
-    Z                   = (round(min(data.depth))+blen/2:blen:max(z(:))+blen);
-    Zmax                = min(Z);
-    u_interp            = NaN(length(time),length(Z));
-    v_interp            = NaN(length(time),length(Z));
-    if reply_ts == 1
-        ts_interp       = NaN(length(time),length(Z));
-    end
-    
-    for i=1:length(time)
-        % indice correspondant sur la grille finale Z
-        ind = -(round((Zmax-z(1,i))/blen)-1);
-        % filling the grid
-        npts = min([length(Z)-ind-1 length(bin)]);
-        u_interp(i,ind:ind+npts-1) = u1(1:npts,i);
-        v_interp(i,ind:ind+npts-1) = v1(1:npts,i);
-        if reply_ts == 1
-            ts_interp(i,ind:ind+npts-1) = data.ts.ts(1:npts,i);
-        end
+        ts_interp(i,ind:ind+npts-1) = data.ts.ts(1:npts,i);
     end
 end
 

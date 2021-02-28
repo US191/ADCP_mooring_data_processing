@@ -16,17 +16,17 @@ clear all;close all;
 addpath('.\moored_adcp_proc');
 
 % Location of ADCP up and down data
-fpath = 'F:\Encours\PIRATA_ADCP-MOORINGS\23W\v2\2015-2016\';
+fpath = '.\data_example\up_and_down\';
 
 % Directory for outputs
-fpath_output = 'F:\Encours\PIRATA_ADCP-MOORINGS\23W\v2\2015-2016\';
+fpath_output = './23W/';
 
 % Contour levels for u anv v fields
 niv_u = (-1.5:0.1:1.5);
 niv_v = (-0.5:0.1:0.5);
 
 %% combine up and down
-load([fpath, 'up\23W0N_1140_instr_01_int_filt_sub']);
+load('C:\Users\proussel\Documents\OUTILS\ADCP\ADCP_mooring_data_processing\23W\2008-2009\up\23W0N_1001_instr_01_int_filt_sub');
 adcp_up=adcp;
 up_u=data.uintfilt;
 up_v=data.vintfilt;
@@ -35,7 +35,7 @@ up_time=data.inttim;
 %npts_up= data.npts_up;
 freq_up=adcp_up.config.sysconfig.frequency;
 
-load([fpath, 'dn\23W0N_2627_instr_01_int_filt_sub']);
+load('C:\Users\proussel\Documents\OUTILS\ADCP\ADCP_mooring_data_processing\23W\2008-2009\dn\23W0N_1023_instr_02_int_filt_sub');
 adcp_down=adcp;
 down_u=data.uintfilt;
 down_v=data.vintfilt;
@@ -54,15 +54,15 @@ distance_between_instruments = 3;
 distance_between_up_and_down = adcp_up.config.cell/2 + adcp_up.config.blank + distance_between_instruments + adcp_down.config.blank + adcp_down.config.cell/2;
 %calculate real minimum down ADCP depth
 up_z = fliplr(up_z);
-depth_down_ADCP = up_z(end) + ceil(distance_between_up_and_down);
+depth_down_ADCP = 148 + ceil(distance_between_up_and_down);
 %interval grid between up and down ADCP
 interval_grid = max(up_z)+adcp_up.config.cell/2-1:adcp_up.config.cell/2:min(depth_down_ADCP)-adcp_up.config.cell/2+1;
 %on applique l'offset sur les profondeurs de l'ADCP down
 offset_ADCP_down = min(down_z) - min(depth_down_ADCP);
 down_z = down_z - offset_ADCP_down;
-% down_z = flip(down_z);
-% down_u = flip(down_u);
-% down_v = flip(down_v);
+down_z = flip(down_z);
+down_u = flip(down_u);
+down_v = flip(down_v);
 
 % initialisation de la matrice combinée up + down
 [B,a] = size(down_u); [B1,a1] = size(up_u);
@@ -85,7 +85,7 @@ end
 Z = [up_z interval_grid down_z];
 inttim = down_time;
 bin_start = 1;
-bin_end = length(Z);
+bin_end = 52;
 uintfilt = u_final;
 vintfilt = v_final;
 
@@ -141,7 +141,7 @@ ncid     = netcdf.create([fpath_output,'ADCP_',mooring.name,'_',num2str(yr_start
 
 %create dimension
 dimidt   = netcdf.defDim(ncid,'time',length(inttim));
-dimidz   = netcdf.defDim(ncid,'depth',length(Z));
+dimidz   = netcdf.defDim(ncid,'depth',length(data.Z));
 %Define IDs for the dimension variables (pressure,time,latitude,...)
 time_ID  = netcdf.defVar(ncid,'time','double',dimidt);
 depth_ID = netcdf.defVar(ncid,'depth','double',dimidz);
@@ -153,13 +153,12 @@ v_ID     = netcdf.defVar(ncid,'v','double',[dimidt dimidz]);
 netcdf.endDef(ncid);
 %Then store the dimension variables in
 netcdf.putVar(ncid,time_ID,inttim);
-netcdf.putVar(ncid,depth_ID,Z);
+netcdf.putVar(ncid,depth_ID,data.Z);
 %Then store my main variable
-netcdf.putVar(ncid,u_ID,uintfilt');
-netcdf.putVar(ncid,v_ID,vintfilt');
+netcdf.putVar(ncid,u_ID,data.uintfilt');
+netcdf.putVar(ncid,v_ID,data.vintfilt');
 
 %We're done, close the netcdf
 netcdf.close(ncid);
 disp('****')
 % -------------------------------------------------------------------------------------------
-
