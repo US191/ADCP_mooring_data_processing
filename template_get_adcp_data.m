@@ -2,7 +2,7 @@
 % template_get_adcp_data.m
 % -------------------------------
 % Author : Pierre ROUSSELOT - IRD (pierre.rousselot@ird.fr)
-%          Jeremie HABASQUE - IRD (jeremie.habasque@ird.fr)  
+%          Jeremie HABASQUE - IRD (jeremie.habasque@ird.fr)
 % -------------------------------
 % INPUTS:
 % - binary raw file with .000 extension
@@ -16,15 +16,15 @@ addpath('/home/proussel/Documents/OUTILS/TOOLS/nansuite'); % NaNSuitePath
 
 %% META information:
 % Location rawfile
-rawfile          = '_RDI_000.000';        % binary file with .000 extension
-fpath_output     = './10W/';                                                             % Output directory
+rawfile          = 'FR30_000.000';        % binary file with .000 extension
+fpath_output     = './0-0/';                                                             % Output directory
 
 % Cruise/mooring info
 cruise.name      = 'PIRATA';                                                         % cruise name
-mooring.name     = '10W0N';                                                                % '0N10W'
-mooring.lat      = '00째00.000';                                                           % latitude [째']
-mooring.lon      = '-10째00.000';                                                           % longitude [째']
-clock_drift      = 0;                                                                   % [seconds]
+mooring.name     = '0W0N';                                                                % '0N10W'
+mooring.lat      = '00�00.000';                                                           % latitude [째']
+mooring.lon      = '00�00.000';                                                           % longitude [째']
+clock_drift      = 146;                                                                   % [seconds]
 
 % ADCP info
 adcp.sn          = 509;                                                                  % ADCP serial number
@@ -37,8 +37,8 @@ instr            = 1;                                                           
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Convert variables
-latDegInd               = strfind(mooring.lat,'째');
-lonDegInd               = strfind(mooring.lon,'째');
+latDegInd               = strfind(mooring.lat,'�');
+lonDegInd               = strfind(mooring.lon,'�');
 mooring.lat             = str2double(mooring.lat(1:latDegInd-1))+str2double(mooring.lat(latDegInd+1:end-1))/60;
 mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))+str2double(mooring.lon(lonDegInd+1:end-1))/60;
 clock_drift             = clock_drift/3600;  % convert into hrs
@@ -97,7 +97,7 @@ freq                = raw.config.sysconfig.frequency;
 u2                  = squeeze(raw.vel(:,1,first:last));
 v2                  = squeeze(raw.vel(:,2,first:last));
 w                   = squeeze(raw.vel(:,3,first:last));
-vel_err             = squeeze(raw.vel(:,4,first:last)); 
+vel_err             = squeeze(raw.vel(:,4,first:last));
 corr                = squeeze(mean(raw.cor(:,4,first:last),2));
 ea                  = squeeze(mean(raw.amp(:,:,first:last),2));
 pg                  = squeeze(raw.pg(:,4,first:last));
@@ -192,7 +192,7 @@ axis([0 length(ang(:,1)) 0 20])
 grid on;
 saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Attitude'],'fig')
 disp('****')
-disp('Delete high attitude ADCP data (>=10째)');
+disp('Delete high attitude ADCP data (>=10�)');
 
 high_pitch = find(abs(ang(:,1))>=10);
 high_roll  = find(abs(ang(:,2))>=10);
@@ -233,84 +233,120 @@ ylabel('Bins');
 xlabel('Time index');
 saveas(gcf,[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins'],'fig')
 
-%% If upward looking: determine range of surface bins used for instrument depth correction below!
+%% Add external pressure sensor choice
 disp('****')
-surface_bins = input('Do you want to apply an offset using surface reflection? 1/0 [1]');
-if isempty(surface_bins)
-    surface_bins = 1;
+pressure_data = input('Do you have external pressure data? 1/0 [0]');
+if isempty(pressure_data)
+    pressure_data = 0;
 end
-if surface_bins == 1
-    sbins               = input('Determine range of surface bins used for instrument depth correction (with aplitude plot, ie. 30:35): ');
-    
-    %% Calculate depth of each bin:
-    dpt                 = sw_dpth(press,mooring.lat)';  % convert pressure to depth, press needs to have dimension (n x 1)
-    dpt1                = repmat(dpt,nbin,1);
-    binmat              = repmat((1:nbin)',1,length(dpt1));
-    
-    % If ADCP is upward-looking a depth correction can be inferred from the surface reflection, which is done in adcp_surface_fit
-    disp('****')
-    if strcmp(adcp.direction,'up')
-        [z,dpt1,offset,xnull] = adcp_surface_fit(dpt,ea,sbins,blen,tlen,lag,blnk,nbin,fbind);
-    elseif strcmp(adcp.direction,'dn')
-        z(1,:) = dpt1(1,:)+(tlen+blen+lag)*0.5+blnk;
-        for ii = 2:length(binmat(:,1))
-            z(ii,:) = z(1,:)+(binmat(ii,:)-1.5)*blen;
-        end
-    else
-        error('Bin depth calculation: unknown direction!');
-    end
-    
-    saveas(figure(5),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Histdiff_depth'],'fig')
-    saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Offset_depth'],'fig')
-    saveas(figure(7),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins_2'],'fig')
-else
-    dpt                 = sw_dpth(press,mooring.lat)';  % convert pressure to depth, press needs to have dimension (n x 1)
-    dpt1                = repmat(dpt,nbin,1);
-    z                   = dpt;
-    figure
-    plot(dpt)
+if pressure_data == 1
+    [filename, path, ~] = uigetfile('*.cnv', 'Select external pressure file');
+    press_file = fullfile(path, filename);
+    press_file = read_sbe(press_file);
+    real_depth = press_file.depSM(first:last);
+    dpt        = sw_dpth(press,mooring.lat)';  % convert pressure to depth, press needs to have dimension (n x 1)
+    plot(real_depth, 'b')
+    grid on 
     hold on
-    plot(adcp.instr_depth*ones(length(dpt),1),'--r')
-    hold off
-    grid on
-    axis([0 length(dpt) min(min(dpt,adcp.instr_depth*ones(1,length(dpt))))-50 max(max(dpt,adcp.instr_depth*ones(1,length(dpt))))+50])
-    xlabel('Ensembles')
+    plot(dpt, 'r')
+    legend('External sensor depth','ADCP sensor depth');   
+    xlabel('Time Index')
     ylabel('Depth [m]')
-    legend('Depth','Nominal Depth')
-    offset = input('Do you want to apply a manual offset? 1/0 [0]');
-    if isempty(offset)
-        offset           = 0;
-    elseif offset == 1
-        offset          = input('->Enter new offset:');
-        dpt             = dpt + offset;
-        dpt1            = dpt1 + offset;
-        z               = z + offset;
-        hold on
-        plot(dpt,'g')
-        hold off
-        legend('Depth', 'Nominal Depth', 'Corrected depth')
-    elseif offset == 0
-        offset           = 0;
+    exsens_data = input('Do you want to use external sensor data? 1/0 [0]');
+    if isempty(exsens_data)
+        exsens_data = 1;
     end
-    
-    binmat              = repmat((1:nbin)',1,length(dpt1));
-    
-    if strcmp(adcp.direction,'up')
-        z(1,:) = dpt1(1,:)-(tlen+blen+lag)*0.5-blnk;
+    if exsens_data
+        dpt    = real_depth;
+        dpt1   = repmat(dpt,nbin,1);
+        binmat = repmat((1:nbin)',1,length(dpt1));
+        z(1,:) = dpt1(1,:)-fbind;
         for ii = 2:length(binmat(:,1))
             z(ii,:) = z(1,:)-(binmat(ii,:)-1.5)*blen;
         end
-    elseif strcmp(adcp.direction,'dn')
-        z(1,:) = dpt1(1,:)+(tlen+blen+lag)*0.5+blnk;
-        for ii = 2:length(binmat(:,1))
-            z(ii,:) = z(1,:)+(binmat(ii,:)-1.5)*blen;
-        end
-    else
-        error('Bin depth calculation: unknown direction!');
     end
-    
 end
 
+%% If upward looking: determine range of surface bins used for instrument depth correction below!
+surface_bins = 0;
+if pressure_data == 0
+    disp('****')
+    surface_bins = input('Do you want to apply an offset using surface reflection? 1/0 [1]');
+    if isempty(surface_bins)
+        surface_bins = 1;
+    end
+    if surface_bins == 1
+        sbins               = input('Determine range of surface bins used for instrument depth correction (with aplitude plot, ie. 30:35): ');
+        
+        %% Calculate depth of each bin:
+        dpt                 = sw_dpth(press,mooring.lat)';  % convert pressure to depth, press needs to have dimension (n x 1)
+        dpt1                = repmat(dpt,nbin,1);
+        binmat              = repmat((1:nbin)',1,length(dpt1));
+        
+        % If ADCP is upward-looking a depth correction can be inferred from the surface reflection, which is done in adcp_surface_fit
+        disp('****')
+        if strcmp(adcp.direction,'up')
+            [z,dpt1,offset,xnull] = adcp_surface_fit(dpt,ea,sbins,blen,tlen,lag,blnk,nbin,fbind);
+        elseif strcmp(adcp.direction,'dn')
+            z(1,:) = dpt1(1,:)+(tlen+blen+lag)*0.5+blnk;
+            for ii = 2:length(binmat(:,1))
+                z(ii,:) = z(1,:)+(binmat(ii,:)-1.5)*blen;
+            end
+        else
+            error('Bin depth calculation: unknown direction!');
+        end
+        
+        saveas(figure(5),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Histdiff_depth'],'fig')
+        saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Offset_depth'],'fig')
+        saveas(figure(7),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','Amplitude_bins_2'],'fig')
+    else
+        dpt                 = sw_dpth(press,mooring.lat)';  % convert pressure to depth, press needs to have dimension (n x 1)
+        dpt1                = repmat(dpt,nbin,1);
+        z                   = dpt;
+        figure
+        plot(dpt)
+        hold on
+        plot(adcp.instr_depth*ones(length(dpt),1),'--r')
+        hold off
+        grid on
+        axis([0 length(dpt) min(min(dpt,adcp.instr_depth*ones(1,length(dpt))))-50 max(max(dpt,adcp.instr_depth*ones(1,length(dpt))))+50])
+        xlabel('Ensembles')
+        ylabel('Depth [m]')
+        legend('Depth','Nominal Depth')
+        offset = input('Do you want to apply a manual offset? 1/0 [0]');
+        if isempty(offset)
+            offset           = 0;
+        elseif offset == 1
+            offset          = input('->Enter new offset:');
+            dpt             = dpt + offset;
+            dpt1            = dpt1 + offset;
+            z               = z + offset;
+            hold on
+            plot(dpt,'g')
+            hold off
+            legend('Depth', 'Nominal Depth', 'Corrected depth')
+        elseif offset == 0
+            offset           = 0;
+        end
+        
+        binmat              = repmat((1:nbin)',1,length(dpt1));
+        
+        if strcmp(adcp.direction,'up')
+            z(1,:) = dpt1(1,:)-(tlen+blen+lag)*0.5-blnk;
+            for ii = 2:length(binmat(:,1))
+                z(ii,:) = z(1,:)-(binmat(ii,:)-1.5)*blen;
+            end
+        elseif strcmp(adcp.direction,'dn')
+            z(1,:) = dpt1(1,:)+(tlen+blen+lag)*0.5+blnk;
+            for ii = 2:length(binmat(:,1))
+                z(ii,:) = z(1,:)+(binmat(ii,:)-1.5)*blen;
+            end
+        else
+            error('Bin depth calculation: unknown direction!');
+        end
+        
+    end
+end
 %% Remove bad data if ADCP is looking upward
 u1=u; v1=v; w1=w; vel_err1=vel_err; ea1=ea; corr1=corr; z1=z;
 if surface_bins == 1
@@ -364,7 +400,9 @@ end
 % More meta information
 %adcp.comment='';
 adcp.config         = raw.config;
-adcp.z_offset       = offset;
+if pressure_data == 0
+    adcp.z_offset       = offset;
+end
 adcp.ang            = ang;
 adcp.mag_dev        = rot;
 
@@ -513,7 +551,7 @@ end
 saveas(figure(5),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','data_raw_filt_subsampled_1'],'fig')
 saveas(figure(6),[fpath_output,mooring.name,'_',num2str(adcp.sn),'_instr_',num2str(instr),'_','data_raw_filt_subsampled_2'],'fig')
 
-if horz_interp == 0    
+if horz_interp == 0
     uintfilt      = u_interp';
     vintfilt      = v_interp';
     inttim        = data.time;

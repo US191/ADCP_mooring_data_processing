@@ -40,7 +40,7 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     x_null = -coef(2,:)./2./coef(1,:);
 
     %% Calculate offset
-    offset = round(((x_null-1.5)*blen+fbind)-(zadcp));     
+    offset = round(((x_null-1)*blen+blen/2+fbind)-(zadcp));     
     disp('-------------------------------');
     disp(['Depth offset is around ' num2str(round(nanmean(offset))) ' m']);
     disp('-------------------------------');
@@ -55,7 +55,7 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     %% Plot histogram of differences
-    dz     = ((x_null-1.5)*blen+fbind)-zadcp;
+    dz     = ((x_null-1)*blen+blen/2+fbind)-zadcp;
     count  = [-100:1:100];
     ncount = hist(-dz,count);
     ncount = ncount/length(dz)*100;
@@ -72,7 +72,7 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     plot(-zadcp,'b');
     grid on
     hold on;
-    plot(-((x_null-1.5)*blen+fbind),'r');
+    plot(-((x_null-1)*blen+blen/2+fbind),'r');
     legend('Original','Reconstructed from surface reflection');
     
     if abs(offset)>15
