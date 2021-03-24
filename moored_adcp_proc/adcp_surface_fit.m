@@ -4,7 +4,7 @@ function [zbins,zadcp1,offset,x_null]=adcp_surface_fit(zadcp,ea,surface_bins,ble
     dpt1   = repmat(zadcp,nbin,1);
     binmat = repmat((1:nbin)',1,length(dpt1));   
     
-    z(1,:) = dpt1(1,:)-(tlen+blen+lag)*0.5-blnk;
+    z(1,:) = dpt1(1,:)-fbind;
     for ii = 2:length(binmat(:,1))
         z(ii,:) = z(1,:)-(binmat(ii,:)-1.5)*blen; 
     end
