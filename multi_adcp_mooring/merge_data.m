@@ -5,14 +5,14 @@
 clear all; close all;
 
 %% Variables
-FileToMerge1     = 'F:\Encours\PIRATA_ADCP-MOORINGS\Convert_ADCP/ADCP_23W0N_2001_2015.nc'; %.nc file to merge with
-FileToMerge2     = 'F:\Encours\PIRATA_ADCP-MOORINGS\23W\0_Final_Files/ADCP_0N23W_2015_2016_1d_up_down.nc'; %.nc file to merge
+FileToMerge1     = 'M:\PIRATA-FR31\data-processing\MOUILLAGE_ADCP\10W\ADCP_10W0N_2001_2019_1d.nc'; %.nc file to merge with
+FileToMerge2     = 'M:\PIRATA-FR31\data-processing\MOUILLAGE_ADCP\10W\ADCP_10W0N_2019_2019_1d.nc'; %.nc file to merge
 % FileToMerge3     = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/10W/0_Final_Files/ADCP_10W0N_2004_2005_1d.nc'; %.nc file to merge
 % FileToMerge1     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2013_1d.nc'; %.nc file to merge with
 % FileToMerge2     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2016_1d.nc'; %.nc file to merge
 step_subsampling = 1; % 1=daily
 plot_data        = 1;
-mooring.name     = '23W0N';
+mooring.name     = '10W0N';
 freq             = 'Variable';
 % mooring.name     = '0N130E';
 % freq             = '75';
@@ -20,8 +20,8 @@ freq             = 'Variable';
 %% Read first .nc file
 ncfile1.time  = ncread(FileToMerge1,'TIME');
 ncfile1.depth = ncread(FileToMerge1,'DEPTH');
-ncfile1.u     = ncread(FileToMerge1,'U')';
-ncfile1.v     = ncread(FileToMerge1,'V')';
+ncfile1.u     = ncread(FileToMerge1,'UCUR')';
+ncfile1.v     = ncread(FileToMerge1,'VCUR')';
 
 %% Read second .nc file
 ncfile2.time  = ncread(FileToMerge2,'TIME');
@@ -29,18 +29,13 @@ ncfile2.depth = ncread(FileToMerge2,'DEPTH');
 ncfile2.u     = ncread(FileToMerge2,'UCUR');
 ncfile2.v     = ncread(FileToMerge2,'VCUR');
 
-% %% Read third .nc file
-% ncfile3.time  = ncread(FileToMerge3,'TIME');
-% ncfile3.depth = ncread(FileToMerge3,'DEPTH');
-% ncfile3.u     = ncread(FileToMerge3,'UCUR');
-% ncfile3.v     = ncread(FileToMerge3,'VCUR');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Create depth matrix
 depth = max(vertcat(ncfile1.depth,ncfile2.depth)):ncfile1.depth(2)-ncfile1.depth(1):min(vertcat(ncfile1.depth,ncfile2.depth));
 depth = fliplr(depth);
 max(vertcat(ncfile1.depth,ncfile2.depth))
-% min(vertcat(ncfile1.depth,ncfile2.depth))
-depth = 0:5:1000;
+min(vertcat(ncfile1.depth,ncfile2.depth))
+depth = 0:5:350;
 
 %% Create time matrix
 time  = vertcat(ncfile1.time,ncfile2.time);
@@ -51,17 +46,14 @@ time  = time*ones(1,length(depth));
 
 %% Create u/v matrix
 for ii = 1:length(ncfile1.time)
-    u1(ii,:) = interp1(ncfile1.depth,ncfile1.u(ii,:),depth);
-    v1(ii,:) = interp1(ncfile1.depth,ncfile1.v(ii,:),depth);
+    u1(ii,:) = interp1(ncfile1.depth,ncfile1.u(:,ii),depth);
+    v1(ii,:) = interp1(ncfile1.depth,ncfile1.v(:,ii),depth);
 end
 for ii = 1:length(ncfile2.time)
     u2(ii,:) = interp1(ncfile2.depth,ncfile2.u(ii,:),depth);
     v2(ii,:) = interp1(ncfile2.depth,ncfile2.v(ii,:),depth);
 end
-% for ii = 1:length(ncfile3.time)
-%     u3(ii,:) = interp1(ncfile3.depth,ncfile3.u(ii,:),depth);
-%     v3(ii,:) = interp1(ncfile3.depth,ncfile3.v(ii,:),depth);
-% end
+
 u     = vertcat(u1,u2);
 v     = vertcat(v1,v2);
 
@@ -128,7 +120,7 @@ if plot_data
     gregtick;
     title({[mooring.name, ' - ' num2str(date1) ' to ' num2str(date2) ' - MERIDIONAL VELOCITY - RDI ',num2str(freq),' kHz (filtered from tide)']});
     
-    graph_name = ['ADCP_' mooring.name '_' num2str(date1) '_' num2str(date2) '_U_V_daily'];
+    graph_name = ['/ADCP_' mooring.name '_' num2str(date1) '_' num2str(date2) '_U_V_daily'];
     set(hf,'Units','Inches');
     pos = get(hf,'Position');
     set(hf,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
@@ -142,15 +134,17 @@ timed(:,5) = 0;
 timed(:,6) = 0;
 time       = datenum(timed)-datenum(1950,01,01);
 
+depth      = depth(:,1);
+
 disp('****')
 disp('Creating .nc file')
 yr_start = datestr(time(1)+datenum(1950,01,01), 'yyyy');
 yr_end   = datestr(time(end)+datenum(1950,01,01), 'yyyy');
 
-ncid     = netcdf.create(['ADCP_',mooring.name,'_',num2str(yr_start),'_',num2str(yr_end),'.nc'],'NC_CLOBBER');
+ncid     = netcdf.create(['/ADCP_',mooring.name,'_',num2str(yr_start),'_',num2str(yr_end),'.nc'],'NC_CLOBBER');
 
 %create dimension
-dimidz   = netcdf.defDim(ncid, 'DEPTH', size(depth,2));
+dimidz   = netcdf.defDim(ncid, 'DEPTH', size(depth,1));
 dimidt   = netcdf.defDim(ncid, 'TIME', netcdf.getConstant('NC_UNLIMITED'));
 %Define IDs for the dimension variables (pressure,time,latitude,...)
 time_ID  = netcdf.defVar(ncid,'TIME','double',dimidt);
