@@ -16,17 +16,17 @@ clear all;close all;
 addpath('.\moored_adcp_proc');
 
 % Location of ADCP up and down data
-fpath = 'F:\Encours\PIRATA_ADCP-MOORINGS\23W\v2\2015-2016\';
+fpath = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/23W/2004-2005';
 
 % Directory for outputs
-fpath_output = 'F:\Encours\PIRATA_ADCP-MOORINGS\23W\v2\2015-2016\';
+fpath_output = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/23W/2004-2005';
 
 % Contour levels for u anv v fields
 niv_u = (-1.5:0.1:1.5);
 niv_v = (-0.5:0.1:0.5);
 
 %% combine up and down
-load([fpath, 'up\23W0N_1140_instr_01_int_filt_sub']);
+load([fpath, '/23W0N_3173_instr_01_int_filt_sub.mat']);
 adcp_up=adcp;
 up_u=data.uintfilt;
 up_v=data.vintfilt;
@@ -35,7 +35,7 @@ up_time=data.inttim;
 %npts_up= data.npts_up;
 freq_up=adcp_up.config.sysconfig.frequency;
 
-load([fpath, 'dn\23W0N_2627_instr_01_int_filt_sub']);
+load([fpath, '/23W0N_3173_instr_02_int_filt_sub.mat']);
 adcp_down=adcp;
 down_u=data.uintfilt;
 down_v=data.vintfilt;
@@ -88,6 +88,12 @@ bin_start = 1;
 bin_end = length(Z);
 uintfilt = u_final;
 vintfilt = v_final;
+data.uintfilt = uintfilt;
+data.vintfilt = vintfilt;
+data.inttim   = inttim;
+data.Z        = Z;
+mooring.name  = '23W0N';
+save([fpath_output, mooring.name '_instr_int_filt_sub_up_down.mat'],'mooring','data');
 
 %% Figure
 niv_u               = (-1:0.05:1);

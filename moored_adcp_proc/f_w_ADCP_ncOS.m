@@ -46,8 +46,8 @@ if ~isnumeric(d_fillval)
 end
 
 %% Get start and final dates of mooring data %%
-ti_startDate=julian(struct_ADCP.time(1,1));
-ti_finalDate=julian(struct_ADCP.time(length(struct_ADCP.time)));
+ti_startDate=julian(struct_ADCP.time(1,1));%datevec(struct_ADCP.time(1,1)+datenum(1950,01,01));%
+ti_finalDate=julian(struct_ADCP.time(length(struct_ADCP.time)));%datevec(struct_ADCP.time(length(struct_ADCP.time))+datenum(1950,01,01));%
 
 % Convert initial time from Julian Days (JD) beginning at 0000 hours, May 23, 1968 (as initialy created) to days numbers (JD) to be used as started at 0000 hours on January 01, 1950 %%
 ti_timeJulD=struct_ADCP.time;
@@ -55,7 +55,7 @@ ti_timeJ=ones(1,numel(ti_timeJulD)) * NaN;
 for it=1:numel(ti_timeJulD)
     ti_timeJ(it)=days(datetime(ti_timeJulD(it)-0.5,'ConvertFrom','juliandate') - datetime(1950,1,1,0,0,0));  % -0.5 is necessary to remove 12h00 introduced by datetime function starting at noon instead of midnight as performed by julian function previously used 
 end
-struct_ADCP.time=ti_timeJ;
+struct_ADCP.time=ti_timeJ;%struct_ADCP.time';
 
 %% Find and replace NaN by FillValue in all variables %%
 % Test and replace NaN (if needed) in variable dimensions (TIME, DEPTH, LATITUDE, LONGITUDE) %

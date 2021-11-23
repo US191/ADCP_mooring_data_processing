@@ -5,8 +5,8 @@
 %clear all; close all;
 
 %% Variables
-FileToMerge1     = 'F:\Encours\PIRATA_ADCP-MOORINGS\Convert_ADCP/ADCP_23W0N_2001_2015.nc'; %.nc file to merge with
-FileToMerge2     = 'F:\Encours\PIRATA_ADCP-MOORINGS\23W\0_Final_Files/ADCP_0N23W_2015_2016_1d_up_down.nc'; %.nc file to merge
+FileToMerge1     = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/23W/0_Final_Files/ADCP_0N23W_2001_2002_1d.nc'; %.nc file to merge with
+FileToMerge2     = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/23W/0_Final_Files/ADCP_0N23W_2004_2005_1d_up_down.nc'; %.nc file to merge
 %FileToMerge2     = 'F:\Encours\PIRATA_ADCP-MOORINGS\23W\v2\2008-2009\ADCP_23W0N_2008_2009_1d.nc';
 % FileToMerge3     = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/10W/0_Final_Files/ADCP_10W0N_2004_2005_1d.nc'; %.nc file to merge
 % FileToMerge1     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2013_1d.nc'; %.nc file to merge with
@@ -21,8 +21,8 @@ freq             = 'Variable';
 %% Read first .nc file
 ncfile1.time  = ncread(FileToMerge1,'TIME');
 ncfile1.depth = ncread(FileToMerge1,'DEPTH');
-ncfile1.u     = ncread(FileToMerge1,'U')';
-ncfile1.v     = ncread(FileToMerge1,'V')';
+ncfile1.u     = ncread(FileToMerge1,'UCUR');
+ncfile1.v     = ncread(FileToMerge1,'VCUR');
 
 %% Read second .nc file
 ncfile2.time  = ncread(FileToMerge2,'TIME');
