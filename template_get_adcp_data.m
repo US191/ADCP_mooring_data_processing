@@ -16,22 +16,23 @@ addpath('/home/proussel/Documents/OUTILS/TOOLS/nansuite'); % NaNSuitePath
 
 %% META information:
 % Location rawfile
-rawfile          = 'FR30_000.000';        % binary file with .000 extension
-fpath_output     = './0-0/';                                                             % Output directory
+rawfile          = 'FR31/FR30_000.000';        % binary file with .000 extension
+fpath_output     = './FR31/0-0/';                                                         % Output directory
 
 % Cruise/mooring info
-cruise.name      = 'PIRATA';                                                         % cruise name
-mooring.name     = '10W0N';                                                                % '0N10W'
-mooring.lat      = '00°00.000';                                                           % latitude [Â°']
-mooring.lon      = '-10°00.000';                                                           % longitude [Â°']
-clock_drift      = 418;                                                                   % [seconds]
+cruise.name      = 'PIRATA';                                                              % cruise name
+mooring.name     = '0W0N';                                                                % '0N10W'
+mooring.lat      = '00°00.176';                                                           % latitude [Â°']
+mooring.lon      = '-00°03.920';                                                           % longitude [Â°']
+clock_drift      = 146;                                                                   % [seconds]
 
 % ADCP info
-adcp.sn          = 24629;                                                                  % ADCP serial number
+adcp.sn          = 22545;                                                                 % ADCP serial number
 adcp.type        = '150 khz Quartermaster';                                               % Type : Quartermaster, longranger
 adcp.direction   = 'up';                                                                  % upward-looking 'up', downward-looking 'dn'
 adcp.instr_depth = 300;                                                                   % nominal instrument depth
 instr            = 1;                                                                     % this is just for name convention and sorting of all mooring instruments
+offset_pres_sens = 1;                                                                    % offset in m between pressure sensore and ADCP
 
 % NCFILE info
 d_fillvalue     = -9999; 
@@ -42,8 +43,16 @@ d_fillvalue     = -9999;
 %% Convert variables
 latDegInd               = strfind(mooring.lat,'°');
 lonDegInd               = strfind(mooring.lon,'°');
-mooring.lat             = str2double(mooring.lat(1:latDegInd-1))+str2double(mooring.lat(latDegInd+1:end-1))/60;
-mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))+str2double(mooring.lon(lonDegInd+1:end-1))/60;
+if strfind(mooring.lon,'-')
+    mooring.lat             = str2double(mooring.lat(1:latDegInd-1))-str2double(mooring.lat(latDegInd+1:end-1))/60;
+else
+    mooring.lat             = str2double(mooring.lat(1:latDegInd-1))+str2double(mooring.lat(latDegInd+1:end-1))/60;
+end
+if strfind(mooring.lon,'-')
+    mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))-str2double(mooring.lon(lonDegInd+1:end-1))/60;
+else
+    mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))+str2double(mooring.lon(lonDegInd+1:end-1))/60;
+end
 clock_drift             = clock_drift/3600;  % convert into hrs
 
 %% Read rawfile
@@ -124,9 +133,9 @@ EA0                 = round(mean(ea(nbin,:)));
 
 %% Calculate Magnetic deviation values
 [a,~]                   = gregorian(raw.juliandate(1));
-magnetic_deviation_ini  = -magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(1)-julian(a,1,1,0,0,0))/365.25);
+magnetic_deviation_ini  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(1)-julian(a,1,1,0,0,0))/365.25);
 [a,~]                   = gregorian(raw.juliandate(end));
-magnetic_deviation_end  = -magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(end)-julian(a,1,1,0,0,0))/365.25);
+magnetic_deviation_end  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(end)-julian(a,1,1,0,0,0))/365.25);
 rot                     = (magnetic_deviation_ini+magnetic_deviation_end)/2;
 mag_dev                 = linspace(magnetic_deviation_ini, magnetic_deviation_end, length(time0));
 mag_dev                 = mag_dev(first:last);
@@ -134,9 +143,6 @@ mag_dev                 = mag_dev(first:last);
 %% Correction of magnetic deviation
 disp('****')
 disp('Correct magnetic deviation')
-% for ii = 1 : length(mag_dev)
-%     [u(:,ii),v(:,ii)] = uvrot(u2(:,ii), v2(:,ii), -mag_dev(ii));
-% end
 mag_dev = -mag_dev * pi/180;
 for ii = 1 : length(mag_dev)
     M(1,1) = cos(mag_dev(ii));
@@ -260,7 +266,7 @@ if pressure_data == 1
         exsens_data = 1;
     end
     if exsens_data
-        dpt    = real_depth;
+        dpt    = real_depth-offset_pres_sens;
         dpt1   = repmat(dpt,nbin,1);
         binmat = repmat((1:nbin)',1,length(dpt1));
         z(1,:) = dpt1(1,:)-fbind;

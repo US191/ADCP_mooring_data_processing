@@ -2,27 +2,27 @@
 % Merge subsurface ADCP mooring data                                      %
 % Autor: P. Rousselot / Date: 03/2020                                     %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%clear all; close all;
+clear all; close all;
 
 %% Variables
-FileToMerge1     = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/23W/0_Final_Files/ADCP_0N23W_2001_2002_1d.nc'; %.nc file to merge with
-FileToMerge2     = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/23W/0_Final_Files/ADCP_0N23W_2004_2005_1d_up_down.nc'; %.nc file to merge
-%FileToMerge2     = 'F:\Encours\PIRATA_ADCP-MOORINGS\23W\v2\2008-2009\ADCP_23W0N_2008_2009_1d.nc';
-% FileToMerge3     = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/10W/0_Final_Files/ADCP_10W0N_2004_2005_1d.nc'; %.nc file to merge
-% FileToMerge1     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2013_1d.nc'; %.nc file to merge with
-% FileToMerge2     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/IDMX/ADCP_0N130E_2013_2016_1d.nc'; %.nc file to merge
+FileToMerge1     = '/media/irdcampagnes/PIRATA/PIRATA-DATA/MOORING-PIRATA-ALL/0W/merged_data/ADCP_0W0N_2016_2020_1d.nc'; %.nc file to merge with
+FileToMerge2     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/FR31/0-0/ADCP_0W0N_2020_2021_1d.nc'; %.nc file to merge
 step_subsampling = 1; % 1=daily
 plot_data        = 1;
-mooring.name     = '23W0N';
-freq             = 'Variable';
-% mooring.name     = '0N130E';
-% freq             = '75';
+mooring.name     = '0W0N';
+mooring.lat      = 0;
+mooring.lon      = 0;
+freq             = '150 khz Quartermaster';
+% NCFILE info
+d_fillvalue      = -9999;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Read first .nc file
 ncfile1.time  = ncread(FileToMerge1,'TIME');
 ncfile1.depth = ncread(FileToMerge1,'DEPTH');
 ncfile1.u     = ncread(FileToMerge1,'UCUR');
 ncfile1.v     = ncread(FileToMerge1,'VCUR');
+data.lat      = ncread(FileToMerge1,'LATITUDE');
+data.lon      = ncread(FileToMerge1,'LONGITUDE');
 
 %% Read second .nc file
 ncfile2.time  = ncread(FileToMerge2,'TIME');
@@ -30,28 +30,19 @@ ncfile2.depth = ncread(FileToMerge2,'DEPTH');
 ncfile2.u     = ncread(FileToMerge2,'UCUR');
 ncfile2.v     = ncread(FileToMerge2,'VCUR');
 
-% %% Read third .nc file
-% ncfile3.time  = ncread(FileToMerge3,'TIME');
-% ncfile3.depth = ncread(FileToMerge3,'DEPTH');
-% ncfile3.u     = ncread(FileToMerge3,'UCUR');
-% ncfile3.v     = ncread(FileToMerge3,'VCUR');
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Create depth matrix
-% depth = max(vertcat(ncfile1.depth,ncfile2.depth)):ncfile1.depth(2)-ncfile1.depth(1):min(vertcat(ncfile1.depth,ncfile2.depth));
-% depth = fliplr(depth);
+%depth = max(vertcat(ncfile1.depth,ncfile2.depth)):ncfile1.depth(2)-ncfile1.depth(1):min(vertcat(ncfile1.depth,ncfile2.depth));
+%depth = fliplr(depth);
 max(vertcat(ncfile1.depth,ncfile2.depth))
 min(vertcat(ncfile1.depth,ncfile2.depth))
-depth = 0:5:1000;
+depth = 0:5:300;
 
 %% Create time matrix
 time  = vertcat(ncfile1.time,ncfile2.time);
 [YY,MM,DD,hh,mm,ss] = datevec(time+datenum(1950,01,01));
 time = julian(YY,MM,DD,hh,mm,ss);
-%time  = time + datenum(1950,1,1,0,0,0) + datenum(2020,01,01);  % -0.5 is necessary to remove 12h00 introduced by datetime function starting at noon instead of midnight as performed by julian function previously used 
-%time  = time*ones(1,length(depth));
-
-% time  = time + datetime(1950,1,1,0,0,0);  % -0.5 is necessary to remove 12h00 introduced by datetime function starting at noon instead of midnight as performed by julian function previously used 
-% time  = time*ones(1,length(depth));
 
 %% Create u/v matrix
 for ii = 1:length(ncfile1.time)
@@ -62,10 +53,7 @@ for ii = 1:length(ncfile2.time)
     u2(ii,:) = interp1(ncfile2.depth,ncfile2.u(ii,:),depth);
     v2(ii,:) = interp1(ncfile2.depth,ncfile2.v(ii,:),depth);
 end
-% for ii = 1:length(ncfile3.time)
-%     u3(ii,:) = interp1(ncfile3.depth,ncfile3.u(ii,:),depth);
-%     v3(ii,:) = interp1(ncfile3.depth,ncfile3.v(ii,:),depth);
-% end
+
 u     = vertcat(u1,u2);
 v     = vertcat(v1,v2);
 
@@ -115,48 +103,41 @@ if plot_data
     print(hf,graph_name,'-dpdf','-r300');
 end
 
-%%  Write netcdf file
-time       = time(:,1);
-timed      = gregorian(time);
-timed(:,5) = 0;
-timed(:,6) = 0;
-time       = datenum(timed)-datenum(1950,01,01);
 
+%%  Write netcdf file
 disp('****')
 disp('Creating .nc file')
-yr_start = datestr(time(1)+datenum(1950,01,01), 'yyyy');
-yr_end   = datestr(time(end)+datenum(1950,01,01), 'yyyy');
 
-ncid     = netcdf.create(['ADCP_',mooring.name,'_',num2str(yr_start),'_',num2str(yr_end),'.nc'],'NC_CLOBBER');
+% Input parameters for NETCDF Global Attributes
+tc_globAttFilename      = fullfile('tools/input_GlobalAttrParameters.xls'); % JLL 2020/12 Il serait judicieux de remonter cette valeur en dÃ©but du script template_get_adcp_data.m
 
-%create dimension
-dimidz   = netcdf.defDim(ncid, 'DEPTH', size(depth,2));
-dimidt   = netcdf.defDim(ncid, 'TIME', netcdf.getConstant('NC_UNLIMITED'));
-%Define IDs for the dimension variables (pressure,time,latitude,...)
-time_ID  = netcdf.defVar(ncid,'TIME','double',dimidt);
-netcdf.putAtt(ncid, time_ID, 'long_name', 'Time');
-netcdf.putAtt(ncid, time_ID, 'axis', 'T');
-netcdf.putAtt(ncid, time_ID, 'units', 'days since 1950-01-01T00:00:00Z');
-netcdf.putAtt(ncid, time_ID, 'time_origin', '1-JAN-1950:00:00:00');
-depth_ID = netcdf.defVar(ncid,'DEPTH','double',dimidz);
-netcdf.putAtt(ncid, depth_ID, 'long_name', 'Depth');
-netcdf.putAtt(ncid, depth_ID, 'axis', 'Z');
-netcdf.putAtt(ncid, depth_ID, 'units', 'meters');
-netcdf.putAtt(ncid, depth_ID, 'positive', 'down');
-netcdf.putAtt(ncid, depth_ID, 'point_spacing', 'even');
-%Define the main variable ()
-u_ID     = netcdf.defVar(ncid,'U','double',[dimidz dimidt]);
-netcdf.putAtt(ncid, u_ID, 'long_name', 'Zonal velocities');
-v_ID     = netcdf.defVar(ncid,'V','double',[dimidz dimidt]);
-netcdf.putAtt(ncid, v_ID, 'long_name', 'Meridional velocities');
-%We are done defining the NetCdf
-netcdf.endDef(ncid);
-%Then store the dimension variables in
-netcdf.putVar(ncid, depth_ID, depth(1,:));
-netcdf.putVar(ncid, time_ID, 0, length(time), time);
-%Then store my main variable
-netcdf.putVar(ncid, u_ID, u');
-netcdf.putVar(ncid, v_ID, v');
-%We're done, close the netcdf
-netcdf.close(ncid);
+%% Prepare informations and variables required to create NETCDF file %% 
+time       = time(:,1);
+[yr_start , ~, ~]       = gregorian(time(1));
+[yr_end,  ~, ~]         = gregorian(time(end));
+
+% Read inputs metadata required for NETCDF Global Attributes
+[~,~,cell_ncAttributes] = xlsread(tc_globAttFilename);
+
+% Complete output path and filename 
+tc_ncFilenam_out        = fullfile(['ADCP_',mooring.name,'_',num2str(yr_start),'_',num2str(yr_end),'_1d.nc']);
+
+% Assign a "4D-size" (TIME,DEPTH,LATITUDE,LONGITUDE) to the ADCP current variables : UINTFILT, VINTFILT
+td_uADCP                = ones(numel(time),numel(depth(1,:)),numel(data.lat),numel(data.lon)) * d_fillvalue;
+td_uADCP(:,:,1,1)       = u;
+td_vADCP                = ones(numel(time),numel(depth(1,:)),numel(data.lat),numel(data.lon)) * d_fillvalue;
+td_vADCP(:,:,1,1)       = v;
+
+% Flip for convention
+data.Z                  = depth(1,:);
+%td_uADCP                = fliplr(td_uADCP);
+%td_vADCP                = fliplr(td_vADCP);
+
+% Group general ADCP mooring informations and ADCP data to be written in NETCDF file format
+struct_dataADCP         = struct('mooringName', mooring.name, 'mooringLat', mooring.lat,...
+    'mooringLon', mooring.lon, 'time', time, 'depth', data.Z,...
+    'u', td_uADCP, 'v', td_vADCP);
+
+%%  Write netcdf file  %%        
+f_w_ADCP_ncOS(tc_ncFilenam_out,cell_ncAttributes,struct_dataADCP,d_fillvalue);
 disp('****')
