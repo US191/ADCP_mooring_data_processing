@@ -16,17 +16,17 @@ clear all;close all;
 addpath('.\moored_adcp_proc');
 
 % Location of ADCP up and down data
-fpath = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/23W/2004-2005';
+fpath = '/media/irdcampagnes/PIRATA/PIRATA-FR22/data-adjusted/MOUILLAGE_ADCP';
 
 % Directory for outputs
-fpath_output = '/media/irdcampagnes/PIRATA/PIRATA_ADCP-MOORINGS/23W/2004-2005';
-
+fpath_output = '/media/irdcampagnes/PIRATA/PIRATA-FR22/data-adjusted/MOUILLAGE_ADCP/';
+d_fillvalue = -9999;
 % Contour levels for u anv v fields
 niv_u = (-1.5:0.1:1.5);
 niv_v = (-0.5:0.1:0.5);
 
 %% combine up and down
-load([fpath, '/23W0N_3173_instr_01_int_filt_sub.mat']);
+load([fpath, '/up/10W0N_508_instr_01_int_filt_sub.mat']);
 adcp_up=adcp;
 up_u=data.uintfilt;
 up_v=data.vintfilt;
@@ -35,7 +35,7 @@ up_time=data.inttim;
 %npts_up= data.npts_up;
 freq_up=adcp_up.config.sysconfig.frequency;
 
-load([fpath, '/23W0N_3173_instr_02_int_filt_sub.mat']);
+load([fpath, '/down/10W0N_509_instr_01_int_filt_sub.mat']);
 adcp_down=adcp;
 down_u=data.uintfilt;
 down_v=data.vintfilt;
@@ -92,7 +92,7 @@ data.uintfilt = uintfilt;
 data.vintfilt = vintfilt;
 data.inttim   = inttim;
 data.Z        = Z;
-mooring.name  = '23W0N';
+mooring.name  = '10W0N';
 save([fpath_output, mooring.name '_instr_int_filt_sub_up_down.mat'],'mooring','data');
 
 %% Figure
@@ -113,7 +113,7 @@ ylabel('Depth (m)');
 ylim([0,round(max(Z))]);
 %change figure label in HH:MM
 gregtick;
-title({[mooring.name, ' - ZONAL VELOCITY - RDI 150 kHz and 75 kHz (filtered from tide)']});
+title({[mooring.name, ' - ZONAL VELOCITY - RDI 2 x 300 kHz (filtered from tide)']});
 
 
 %v
@@ -128,7 +128,7 @@ ylabel('Depth (m)');
 ylim([0,round(max(Z))]);
 %change figure label in HH:MM
 gregtick;
-title({[mooring.name, ' - ZONAL VELOCITY - RDI 150 kHz and 75 kHz (filtered from tide)']});
+title({[mooring.name, ' - ZONAL VELOCITY - RDI 2 x 300 kHz (filtered from tide)']});
 
 
 graph_name = [fpath_output, mooring.name '_up_down_U_V_int_filt_sub'];
@@ -140,32 +140,37 @@ print(hf,graph_name,'-dpdf','-r300');
 %%  Write netcdf file
 disp('****')
 disp('Creating .nc file')
-[yr_start , ~, ~] = gregorian(inttim(1));
-[yr_end,  ~, ~]   = gregorian(inttim(length(inttim)));
 
-ncid     = netcdf.create([fpath_output,'ADCP_',mooring.name,'_',num2str(yr_start),'_',num2str(yr_end),'_1d.nc'],'NC_WRITE');
+% Input parameters for NETCDF Global Attributes
+tc_globAttFilename      = fullfile('tools/input_GlobalAttrParameters.xls'); % JLL 2020/12 Il serait judicieux de remonter cette valeur en début du script template_get_adcp_data.m
 
-%create dimension
-dimidt   = netcdf.defDim(ncid,'time',length(inttim));
-dimidz   = netcdf.defDim(ncid,'depth',length(Z));
-%Define IDs for the dimension variables (pressure,time,latitude,...)
-time_ID  = netcdf.defVar(ncid,'time','double',dimidt);
-depth_ID = netcdf.defVar(ncid,'depth','double',dimidz);
-%Define the main variable ()
-u_ID     = netcdf.defVar(ncid,'u','double',[dimidt dimidz]);
-v_ID     = netcdf.defVar(ncid,'v','double',[dimidt dimidz]);
+%% Prepare informations and variables required to create NETCDF file %% 
+[yr_start , ~, ~]       = gregorian(data.inttim(1));
+[yr_end,  ~, ~]         = gregorian(data.inttim(length(data.inttim)));
 
-%We are done defining the NetCdf
-netcdf.endDef(ncid);
-%Then store the dimension variables in
-netcdf.putVar(ncid,time_ID,inttim);
-netcdf.putVar(ncid,depth_ID,Z);
-%Then store my main variable
-netcdf.putVar(ncid,u_ID,uintfilt');
-netcdf.putVar(ncid,v_ID,vintfilt');
+% Read inputs metadata required for NETCDF Global Attributes
+[~,~,cell_ncAttributes] = xlsread(tc_globAttFilename);
 
-%We're done, close the netcdf
-netcdf.close(ncid);
+% Complete output path and filename 
+tc_ncFilenam_out        = fullfile(fpath_output,['ADCP_',mooring.name,'_',num2str(yr_start),'_',num2str(yr_end),'_1d.nc']);
+
+% Assign a "4D-size" (TIME,DEPTH,LATITUDE,LONGITUDE) to the ADCP current variables : UINTFILT, VINTFILT
+td_uADCP                = ones(numel(data.inttim),numel(data.Z),numel(data.lat),numel(data.lon)) * d_fillvalue;
+td_uADCP(:,:,1,1)       = data.uintfilt';
+td_vADCP                = ones(numel(data.inttim),numel(data.Z),numel(data.lat),numel(data.lon)) * d_fillvalue;
+td_vADCP(:,:,1,1)       = data.vintfilt';
+
+% Flip for convention
+data.Z                  = fliplr(data.Z);
+td_uADCP                = fliplr(td_uADCP);
+td_vADCP                = fliplr(td_vADCP);
+
+% Group general ADCP mooring informations and ADCP data to be written in NETCDF file format
+struct_dataADCP         = struct('mooringName', mooring.name, 'mooringLat', mooring.lat,...
+    'mooringLon', mooring.lon, 'time', data.inttim, 'depth', data.Z,...
+    'u', td_uADCP, 'v', td_vADCP);
+
+%%  Write netcdf file  %%        
+f_w_ADCP_ncOS(tc_ncFilenam_out,cell_ncAttributes,struct_dataADCP,d_fillvalue);
 disp('****')
-% -------------------------------------------------------------------------------------------
 

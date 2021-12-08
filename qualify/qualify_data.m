@@ -20,11 +20,11 @@ DVLfile   = '/media/irdcampagnes/PIRATA/PIRATA-FR31/data-final/SADCP/DVL600/ncc/
 LADCPfil1 = '/media/irdcampagnes/PIRATA/PIRATA-FR31/data-adjusted/LADCP/profiles/FR31_006.mat';
 LADCPfil2 = '/media/irdcampagnes/PIRATA/PIRATA-FR31/data-adjusted/LADCP/profiles/FR31_031.mat';
 % %
-% OS38file  = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/OS38/ncc/FR30-OS38_osite_mat20_fhv1_corr_final.nc';
-% OS150file = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/OS150/ncc/FR30-OS150_osite_mat20_fhv1_corr_final.nc';
-% DVLfile   = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/LOCH/ncc/FR30-DVL600_osite_mat20_fhv1_corr_final.nc';
-% LADCPfil1 = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-adjusted/LADCP/profiles/FR30_009.mat';
-% LADCPfil2 = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-adjusted/LADCP/profiles/FR30_010.mat';
+OS38file  = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/OS38/ncc/FR30-OS38_osite_mat20_fhv1_corr_final.nc';
+OS150file = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/OS150/ncc/FR30-OS150_osite_mat20_fhv1_corr_final.nc';
+DVLfile   = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-final/SADCP/LOCH/ncc/FR30-DVL600_osite_mat20_fhv1_corr_final.nc';
+LADCPfil1 = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-adjusted/LADCP/profiles/FR30_009.mat';
+LADCPfil2 = '/media/irdcampagnes/PIRATA/PIRATA-FR30/data-adjusted/LADCP/profiles/FR30_010.mat';
 % % 
 % OS38file  = '/media/irdcampagnes/PIRATA/PIRATA-FR29/data-final/SADCP/OS38/data/LTA/PIRATA-FR29-OS38_LTA_osite_fhv1_final.nc';
 % OS150file = '/media/irdcampagnes/PIRATA/PIRATA-FR29/data-final/SADCP/OS150/data/LTA/PIRATA-FR29-OS150_LTA_osite_fhv1_final.nc';
@@ -272,6 +272,7 @@ ylim([-300 0])
 date_dvl  = (h_dvl(plt_dvl)-h_mooring(plt_m))*(24*60);
 date_os   = (h_os(plt_os)-h_mooring(plt_m))*(24*60);
 date_os38 = (h_os38(plt_os38)-h_mooring(plt_m))*(24*60);
+
 if date_os<0
         legend(['OS150 / ' num2str(round(date_os)) 'min'], ['OS38 / ' num2str(round(date_os38)) 'min'], ['DVL / ' num2str(round(date_dvl)) 'min'], ['ADCP Mooring / ' datestr(h_mooring(plt_m))], 'ADCP filtered','location', 'southeast')  
 else

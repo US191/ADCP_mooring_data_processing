@@ -39,8 +39,16 @@ instr            = 1;                                                           
 %% Convert variables
 latDegInd               = strfind(mooring.lat,'°');
 lonDegInd               = strfind(mooring.lon,'°');
-mooring.lat             = str2double(mooring.lat(1:latDegInd-1))+str2double(mooring.lat(latDegInd+1:end-1))/60;
-mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))+str2double(mooring.lon(lonDegInd+1:end-1))/60;
+if strfind(mooring.lon,'-')
+    mooring.lat             = str2double(mooring.lat(1:latDegInd-1))-str2double(mooring.lat(latDegInd+1:end-1))/60;
+else
+    mooring.lat             = str2double(mooring.lat(1:latDegInd-1))+str2double(mooring.lat(latDegInd+1:end-1))/60;
+end
+if strfind(mooring.lon,'-')
+    mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))-str2double(mooring.lon(lonDegInd+1:end-1))/60;
+else
+    mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))+str2double(mooring.lon(lonDegInd+1:end-1))/60;
+end
 clock_drift             = clock_drift/3600;  % convert into hrs
 
 %% Read rawfile
@@ -54,6 +62,7 @@ raw_file                = [fpath_output, mooring.name '_' num2str(adcp.sn) '_ins
 %     raw                 = read_os3(rawfile,'all');
 %     save(raw_file,'raw','-v7.3');
 % end
+load('10W0N_508_instr_01.mat')
 load('FR22-UP-508.mat')
 
 %% Correct clock drift
@@ -113,7 +122,7 @@ ea                  = squeeze(mean(test(:,4,first:last),2));
 %pg                  = squeeze(raw.pg(:,4,first:last));
 %time                = raw.juliandate(first:last);
 time = julian(SerYear(first:last)+2000,SerMon(first:last),SerDay(first:last),SerHour(first:last));
-time=time(1)+datenum(0,0,0,1,0,0).*[0:length(depth)-1]';
+%time=time(1)+datenum(0,0,0,1,0,0).*[0:length(depth)-1]';
 ang                 = [raw.pitch(first:last) raw.roll(first:last) raw.heading(first:last)];
 soundspeed          = raw.soundspeed(first:last);
 temp                = raw.temperature(first:last);
@@ -133,9 +142,9 @@ EA0                 = round(mean(ea(nbin,:)));
 
 %% Calculate Magnetic deviation values
 [a,~]                   = gregorian(raw.juliandate(1));
-magnetic_deviation_ini  = -magdev(mooring.lat,mooring.lon,0,a+(time(1)-julian(a,1,1,0,0,0))/365.25);
+magnetic_deviation_ini  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(1)-julian(a,1,1,0,0,0))/365.25);
 [a,~]                   = gregorian(raw.juliandate(end));
-magnetic_deviation_end  = -magdev(mooring.lat,mooring.lon,0,a+(time(end)-julian(a,1,1,0,0,0))/365.25);
+magnetic_deviation_end  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(end)-julian(a,1,1,0,0,0))/365.25);
 rot                     = (magnetic_deviation_ini+magnetic_deviation_end)/2;
 mag_dev                 = linspace(magnetic_deviation_ini, magnetic_deviation_end, length(time));
 %mag_dev                 = mag_dev(first:last);

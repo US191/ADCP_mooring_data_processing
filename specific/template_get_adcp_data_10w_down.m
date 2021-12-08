@@ -39,8 +39,16 @@ instr            = 1;                                                           
 %% Convert variables
 latDegInd               = strfind(mooring.lat,'°');
 lonDegInd               = strfind(mooring.lon,'°');
-mooring.lat             = str2double(mooring.lat(1:latDegInd-1))+str2double(mooring.lat(latDegInd+1:end-1))/60;
-mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))+str2double(mooring.lon(lonDegInd+1:end-1))/60;
+if strfind(mooring.lon,'-')
+    mooring.lat             = str2double(mooring.lat(1:latDegInd-1))-str2double(mooring.lat(latDegInd+1:end-1))/60;
+else
+    mooring.lat             = str2double(mooring.lat(1:latDegInd-1))+str2double(mooring.lat(latDegInd+1:end-1))/60;
+end
+if strfind(mooring.lon,'-')
+    mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))-str2double(mooring.lon(lonDegInd+1:end-1))/60;
+else
+    mooring.lon             = str2double(mooring.lon(1:lonDegInd-1))+str2double(mooring.lon(lonDegInd+1:end-1))/60;
+end
 clock_drift             = clock_drift/3600;  % convert into hrs
 
 %% Read rawfile
@@ -143,9 +151,9 @@ EA0                 = round(mean(ea(nbin,:)));
 
 %% Calculate Magnetic deviation values
 [a,~]                   = gregorian(raw.juliandate(1));
-magnetic_deviation_ini  = -magdev(mooring.lat,mooring.lon,0,a+(time(1)-julian(a,1,1,0,0,0))/365.25);
+magnetic_deviation_ini  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(1)-julian(a,1,1,0,0,0))/365.25);
 [a,~]                   = gregorian(raw.juliandate(end));
-magnetic_deviation_end  = -magdev(mooring.lat,mooring.lon,0,a+(time(end)-julian(a,1,1,0,0,0))/365.25);
+magnetic_deviation_end  = magdev(mooring.lat,mooring.lon,0,a+(raw.juliandate(end)-julian(a,1,1,0,0,0))/365.25);
 rot                     = (magnetic_deviation_ini+magnetic_deviation_end)/2;
 mag_dev                 = linspace(magnetic_deviation_ini, magnetic_deviation_end, length(time));
 %mag_dev                 = mag_dev(first:last);

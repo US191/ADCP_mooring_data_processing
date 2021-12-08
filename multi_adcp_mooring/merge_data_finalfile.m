@@ -5,8 +5,8 @@
 clear all; close all;
 
 %% Variables
-FileToMerge1     = '/media/irdcampagnes/PIRATA/PIRATA-DATA/MOORING-PIRATA-ALL/0W/merged_data/ADCP_0W0N_2016_2020_1d.nc'; %.nc file to merge with
-FileToMerge2     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/FR31/0-0/ADCP_0W0N_2020_2021_1d.nc'; %.nc file to merge
+FileToMerge1     = '/home/proussel/Documents/OUTILS/ADCP/ADCP_mooring_data_processing/ADCP_0W0N_2016_2020_1d.nc'; %.nc file to merge with
+FileToMerge2     = '/media/irdcampagnes/PIRATA/PIRATA-DATA/MOORING-PIRATA/0-0/ADCP_0W0N_2020_2021_1d.nc'; %.nc file to merge
 step_subsampling = 1; % 1=daily
 plot_data        = 1;
 mooring.name     = '0W0N';
@@ -37,7 +37,7 @@ ncfile2.v     = ncread(FileToMerge2,'VCUR');
 %depth = fliplr(depth);
 max(vertcat(ncfile1.depth,ncfile2.depth))
 min(vertcat(ncfile1.depth,ncfile2.depth))
-depth = 0:5:300;
+depth = 0:5:320;
 
 %% Create time matrix
 time  = vertcat(ncfile1.time,ncfile2.time);
@@ -59,6 +59,24 @@ v     = vertcat(v1,v2);
 
 time  = time*ones(1,length(depth));
 
+% create a continuous series of daily data, ranging from min(d) to max(d)
+final_time = ceil(min(min(time))):0.25:floor(max(max(time)));
+ADCP_final.u = NaN(length(final_time),length(depth));
+ADCP_final.v = NaN(length(final_time),length(depth));
+
+for i_time = 1:length(final_time)
+    for j_time = 1:length(time)
+        if final_time(i_time) == time(j_time,1)
+            ADCP_final.u(i_time,:)=u(j_time,:);
+            ADCP_final.v(i_time,:)=v(j_time,:);
+        end
+    end
+end
+
+time = final_time;
+time  = time'*ones(1,length(depth));
+u    = ADCP_final.u;
+v    = ADCP_final.v;
 
 %% Plot data
 if plot_data
@@ -81,7 +99,7 @@ if plot_data
     ylabel('Depth (m)');
     ylim([0,max(max(depth))]);
     gregtick;
-    title({[mooring.name, ' - ' num2str(date1) ' to ' num2str(date2) ' - ZONAL VELOCITY - RDI ',num2str(freq),' kHz (filtered from tide)']});
+    title({[mooring.name, ' - ' num2str(date1) ' to ' num2str(date2) ' - ZONAL VELOCITY - RDI ',num2str(freq),' (filtered from tide)']});
     
     %v
     subplot(2,1,2);

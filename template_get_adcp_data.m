@@ -23,16 +23,16 @@ fpath_output     = './FR31/0-0/';                                               
 cruise.name      = 'PIRATA';                                                              % cruise name
 mooring.name     = '0W0N';                                                                % '0N10W'
 mooring.lat      = '00°00.176';                                                           % latitude [Â°']
-mooring.lon      = '-00°03.920';                                                           % longitude [Â°']
+mooring.lon      = '-00°03.920';                                                          % longitude [Â°']
 clock_drift      = 146;                                                                   % [seconds]
 
 % ADCP info
-adcp.sn          = 22545;                                                                 % ADCP serial number
+adcp.sn          = 22546;                                                                 % ADCP serial number
 adcp.type        = '150 khz Quartermaster';                                               % Type : Quartermaster, longranger
 adcp.direction   = 'up';                                                                  % upward-looking 'up', downward-looking 'dn'
 adcp.instr_depth = 300;                                                                   % nominal instrument depth
 instr            = 1;                                                                     % this is just for name convention and sorting of all mooring instruments
-offset_pres_sens = 1;                                                                    % offset in m between pressure sensore and ADCP
+offset_pres_sens = 1;                                                                     % offset in m between pressure sensore and ADCP
 
 % NCFILE info
 d_fillvalue     = -9999; 
