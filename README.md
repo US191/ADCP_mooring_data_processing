@@ -1,3 +1,5 @@
+# WARNING! -> Code transfered and maintained on forge.ird.fr
+
 # ADCP_mooring_data_processing
 Program for processing ADCP mooring data
 
